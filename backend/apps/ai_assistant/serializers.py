@@ -5,21 +5,17 @@ from .models import AISession, AIMessage
 class AIMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIMessage
-        fields = ['id', 'role', 'content', 'created_at']
-        read_only_fields = ['id', 'role', 'created_at']
+        fields = ['id', 'role', 'content', 'rating', 'detected_mood', 'mood_score', 'distress_indicators', 'created_at']
+        read_only_fields = ['id', 'role', 'detected_mood', 'mood_score', 'distress_indicators', 'created_at']
 
 
 class AISessionSerializer(serializers.ModelSerializer):
     messages = AIMessageSerializer(many=True, read_only=True)
-    message_count = serializers.SerializerMethodField()
 
     class Meta:
         model = AISession
-        fields = ['id', 'title', 'is_active', 'messages', 'message_count', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-    def get_message_count(self, obj):
-        return obj.messages.count()
+        fields = ['id', 'title', 'is_active', 'summary', 'messages', 'message_count', 'total_distress_indicators', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'summary', 'message_count', 'total_distress_indicators', 'created_at', 'updated_at']
 
 
 class AISessionListSerializer(serializers.ModelSerializer):
@@ -43,3 +39,11 @@ class AISessionListSerializer(serializers.ModelSerializer):
 class ChatRequestSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=5000)
     session_id = serializers.UUIDField(required=False)
+
+
+class RateMessageSerializer(serializers.Serializer):
+    rating = serializers.ChoiceField(choices=['up', 'down'])
+
+
+class MoodAnalysisSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=2000)

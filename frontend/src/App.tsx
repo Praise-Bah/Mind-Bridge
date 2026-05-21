@@ -15,7 +15,7 @@ import ProfessionalsPage from './pages/professionals/ProfessionalsPage'
 import ProfessionalDetailPage from './pages/professionals/ProfessionalDetailPage'
 import BookingsPage from './pages/professionals/BookingsPage'
 import VideosPage from './pages/videos/VideosPage'
-import AIAssistantPage from './pages/ai/AIAssistantPage'
+import AICompanionPage from './pages/ai/AICompanionPage'
 import JournalPage from './pages/journal/JournalPage'
 import ProfilePage from './pages/profile/ProfilePage'
 import SettingsPage from './pages/settings/SettingsPage'
@@ -34,6 +34,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <Routes>
+      {/* Preview Route - No auth required for testing */}
+      <Route path="/ai-companion-preview" element={<AICompanionPage />} />
+
       {/* Public Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
@@ -52,7 +55,7 @@ function App() {
         <Route path="/professionals/:id" element={<ProfessionalDetailPage />} />
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/videos" element={<VideosPage />} />
-        <Route path="/ai-assistant" element={<AIAssistantPage />} />
+        <Route path="/ai-companion" element={<AICompanionPage />} />
         <Route path="/journal" element={<JournalPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
