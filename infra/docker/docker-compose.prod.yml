@@ -286,12 +286,7 @@ services:
     build:
       context: ../..
       dockerfile: services/auth-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn core.wsgi:application
-               --bind 0.0.0.0:8001 --workers 4 --threads 2
-               --max-requests 1000 --max-requests-jitter 100
-               --timeout 30 --graceful-timeout 15 --access-logfile -"
+    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8001 --workers 4 --threads 2 --max-requests 1000 --max-requests-jitter 100 --timeout 30 --graceful-timeout 15 --access-logfile -"
     environment:
       <<: *auth-env
     depends_on:
@@ -323,11 +318,7 @@ services:
     build:
       context: ../..
       dockerfile: services/community-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn core.wsgi:application
-               --bind 0.0.0.0:8003 --workers 4 --threads 2
-               --max-requests 1000 --timeout 30 --access-logfile -"
+    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8003 --workers 4 --threads 2 --max-requests 1000 --timeout 30 --access-logfile -"
     environment:
       <<: *community-env
     depends_on:
@@ -373,11 +364,7 @@ services:
     build:
       context: ../..
       dockerfile: services/professionals-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn core.wsgi:application
-               --bind 0.0.0.0:8004 --workers 4 --threads 2
-               --max-requests 1000 --timeout 30 --access-logfile -"
+    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8004 --workers 4 --threads 2 --max-requests 1000 --timeout 30 --access-logfile -"
     environment:
       <<: *professionals-env
     depends_on:
@@ -409,11 +396,7 @@ services:
     build:
       context: ../..
       dockerfile: services/content-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn core.wsgi:application
-               --bind 0.0.0.0:8007 --workers 4 --threads 2
-               --max-requests 1000 --timeout 30 --access-logfile -"
+    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8007 --workers 4 --threads 2 --max-requests 1000 --timeout 30 --access-logfile -"
     environment:
       <<: *content-env
     depends_on:
@@ -445,11 +428,7 @@ services:
     build:
       context: ../..
       dockerfile: services/ai-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn core.wsgi:application
-               --bind 0.0.0.0:8006 --workers 2 --worker-class gthread --threads 4
-               --max-requests 500 --timeout 120 --access-logfile -"
+    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8006 --workers 2 --worker-class gthread --threads 4 --max-requests 500 --timeout 120 --access-logfile -"
     environment:
       <<: *ai-env
     depends_on:
@@ -495,9 +474,7 @@ services:
     build:
       context: ../..
       dockerfile: services/notification-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             daphne -b 0.0.0.0 -p 8005 --proxy-headers core.asgi:application"
+    command: sh -c "python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8005 --proxy-headers core.asgi:application"
     environment:
       <<: *notification-env
     depends_on:
@@ -543,9 +520,7 @@ services:
     build:
       context: ../..
       dockerfile: services/chat-service/Dockerfile
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             daphne -b 0.0.0.0 -p 8002 --proxy-headers core.asgi:application"
+    command: sh -c "python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8002 --proxy-headers core.asgi:application"
     environment:
       <<: *chat-env
     depends_on:
@@ -578,10 +553,7 @@ services:
     build:
       context: ../..
       dockerfile: services/admin-service/Dockerfile
-    command: >
-      gunicorn core.wsgi:application
-        --bind 0.0.0.0:8008 --workers 2 --threads 2
-        --timeout 30 --access-logfile -
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8008 --workers 2 --threads 2 --timeout 30 --access-logfile -
     environment:
       <<: *admin-env
     depends_on:
