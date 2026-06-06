@@ -459,7 +459,7 @@ services:
     restart: always
     deploy:
       resources:
-        limits: {cpus: '2.0', memory: 1G}
+        limits: {cpus: '1.0', memory: 1G}
 
   ai-event-subscriber:
     build:
