@@ -12,7 +12,7 @@ interface MessageActionsProps {
 
 export default function MessageActions({
   content,
-  messageId,
+  messageId: _messageId,
   onRegenerate,
   onRate,
   className,

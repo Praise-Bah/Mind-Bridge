@@ -51,7 +51,9 @@ class ChatView(APIView):
 
         AIMessage.objects.create(session=session, role='user', content=message)
 
-        previous_messages = list(session.messages.values('role', 'content')[:-1])
+        # Get all messages except the one we just created (exclude last message)
+        all_messages = list(session.messages.order_by('created_at').values('role', 'content'))
+        previous_messages = all_messages[:-1] if all_messages else []
 
         ai_service = AIService()
         response_text = ai_service.get_response(previous_messages, message)
@@ -86,7 +88,9 @@ class ChatStreamView(APIView):
             content=message,
             distress_indicators=distress_count
         )
-        previous_messages = list(session.messages.values('role', 'content')[:-1])
+        # Get all messages except the one we just created (exclude last message)
+        all_messages = list(session.messages.order_by('created_at').values('role', 'content'))
+        previous_messages = all_messages[:-1] if all_messages else []
 
         def stream_generator():
             full_response = ""
@@ -149,3 +153,10 @@ class MoodDetectionView(APIView):
         mood_data = ai_service.analyze_mood(serializer.validated_data['message'])
         
         return Response(mood_data)
+
+
+class AvailableModelsView(APIView):
+    """Return list of available AI models for the frontend."""
+    def get(self, request):
+        models = AIService.get_available_models()
+        return Response({'models': models})

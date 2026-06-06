@@ -1,29 +1,57 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { RootState } from './store'
 
 import MainLayout from './components/layout/MainLayout'
 import AuthLayout from './components/layout/AuthLayout'
+import ThemeProvider from './providers/ThemeProvider'
 
-import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
-import DashboardPage from './pages/DashboardPage'
-import CommunityPage from './pages/community/CommunityPage'
-import GroupDetailPage from './pages/community/GroupDetailPage'
-import ChatPage from './pages/chat/ChatPage'
-import ProfessionalsPage from './pages/professionals/ProfessionalsPage'
-import ProfessionalDetailPage from './pages/professionals/ProfessionalDetailPage'
-import BookingsPage from './pages/professionals/BookingsPage'
-import VideosPage from './pages/videos/VideosPage'
-import AICompanionPage from './pages/ai/AICompanionPage'
-import JournalPage from './pages/journal/JournalPage'
-import ProfilePage from './pages/profile/ProfilePage'
-import SettingsPage from './pages/settings/SettingsPage'
-import NotFoundPage from './pages/NotFoundPage'
+const LandingPage = lazy(() => import('./pages/LandingPage'))
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
+const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'))
+const ProfessionalPendingPage = lazy(() => import('./pages/auth/ProfessionalPendingPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const CommunityPage = lazy(() => import('./pages/community/CommunityPage'))
+const GroupDetailPage = lazy(() => import('./pages/community/GroupDetailPage'))
+const ChatPage = lazy(() => import('./pages/chat/ChatPage'))
+const ProfessionalsPage = lazy(() => import('./pages/professionals/ProfessionalsPage'))
+const ProfessionalDetailPage = lazy(() => import('./pages/professionals/ProfessionalDetailPage'))
+const BookingsPage = lazy(() => import('./pages/professionals/BookingsPage'))
+const VideosPage = lazy(() => import('./pages/videos/VideosPage'))
+const AICompanionPage = lazy(() => import('./pages/ai/AICompanionPage'))
+const JournalPage = lazy(() => import('./pages/journal/JournalPage'))
+const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'))
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
+const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'))
+const AdminPage = lazy(() => import('./pages/admin/AdminPage'))
+const ProDashboard = lazy(() => import('./pages/pro/ProDashboard'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+
+function PageLoader() {
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  )
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth)
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />
+}
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useSelector((state: RootState) => state.auth)
+  return user?.is_staff ? <>{children}</> : <Navigate to="/dashboard" />
+}
+
+function ProRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useSelector((state: RootState) => state.auth)
+  return user?.is_professional ? <>{children}</> : <Navigate to="/dashboard" />
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
@@ -33,37 +61,51 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <Routes>
-      {/* Preview Route - No auth required for testing */}
-      <Route path="/ai-companion-preview" element={<AICompanionPage />} />
+    <ThemeProvider>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Preview Route - No auth required for testing */}
+          <Route path="/ai-companion-preview" element={<AICompanionPage />} />
 
-      {/* Public Routes */}
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-      </Route>
+          {/* Landing Page - Public */}
+          <Route path="/" element={<LandingPage />} />
 
-      {/* Protected Routes */}
-      <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
-        <Route path="/" element={<Navigate to="/dashboard" />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/community" element={<CommunityPage />} />
-        <Route path="/community/:slug" element={<GroupDetailPage />} />
-        <Route path="/chat" element={<ChatPage />} />
-        <Route path="/chat/:conversationId" element={<ChatPage />} />
-        <Route path="/professionals" element={<ProfessionalsPage />} />
-        <Route path="/professionals/:id" element={<ProfessionalDetailPage />} />
-        <Route path="/bookings" element={<BookingsPage />} />
-        <Route path="/videos" element={<VideosPage />} />
-        <Route path="/ai-companion" element={<AICompanionPage />} />
-        <Route path="/journal" element={<JournalPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-      </Route>
+          {/* Public Routes */}
+          <Route element={<AuthLayout />}>
+            <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+            <Route path="/verify-email" element={<PublicRoute><VerifyEmailPage /></PublicRoute>} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
+            {/* Shown after Google signup as professional — needs auth so PublicRoute is not used */}
+            <Route path="/professional-pending" element={<PrivateRoute><ProfessionalPendingPage /></PrivateRoute>} />
+          </Route>
 
-      {/* 404 */}
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+          {/* Protected Routes */}
+          <Route element={<PrivateRoute><MainLayout /></PrivateRoute>}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community/:slug" element={<GroupDetailPage />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/chat/:conversationId" element={<ChatPage />} />
+            <Route path="/professionals" element={<ProfessionalsPage />} />
+            <Route path="/professionals/:id" element={<ProfessionalDetailPage />} />
+            <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/videos" element={<VideosPage />} />
+            <Route path="/ai-companion" element={<AICompanionPage />} />
+            <Route path="/journal" element={<JournalPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+            <Route path="/pro/dashboard" element={<ProRoute><ProDashboard /></ProRoute>} />
+          </Route>
+
+          {/* 404 */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </ThemeProvider>
   )
 }
 

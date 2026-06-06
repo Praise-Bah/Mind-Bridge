@@ -1,0 +1,25 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc && \
+    rm -rf /var/lib/apt/lists/*
+
+# Build context is the repo root (Mind-Bridge/).
+# Install shared library first so the file:// URL in requirements.txt resolves.
+COPY shared/mindbridge-common /shared/mindbridge-common
+RUN pip install --no-cache-dir /shared/mindbridge-common
+
+# Install backend dependencies, skipping the mindbridge-common file:// line
+# (already installed above).
+COPY backend/requirements.txt /tmp/requirements.txt
+RUN grep -v 'mindbridge-common' /tmp/requirements.txt > /tmp/reqs.txt && \
+    pip install --no-cache-dir -r /tmp/reqs.txt
+
+# Copy source — overridden by volume mount in docker-compose for hot reload.
+COPY backend/ .
+
+EXPOSE 8000
+
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

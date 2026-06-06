@@ -1,0 +1,52 @@
+# Event subscriber for community-service — listens to Redis Pub/Sub and updates local UserSnapshot.
+# Pattern: one subscriber Deployment per service that consumes events.
+# All other subscriber Deployments follow the same structure — change:
+#   - name: community-subscriber → <service>-subscriber
+#   - image: mindbridge/community-service → mindbridge/<service>
+#   - SERVICE_NAME value → <service-name>
+#   - DATABASE_URL key → <SERVICE>_DATABASE_URL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: community-subscriber
+  namespace: mindbridge
+  labels:
+    app: community-subscriber
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: community-subscriber
+  template:
+    metadata:
+      labels:
+        app: community-subscriber
+    spec:
+      containers:
+        - name: community-subscriber
+          image: mindbridge/community-service:latest
+          imagePullPolicy: Always
+          command:
+            - python
+            - manage.py
+            - subscribe_events
+          envFrom:
+            - configMapRef:
+                name: common-env
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: SERVICE_NAME
+              value: community-service
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: COMMUNITY_DATABASE_URL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

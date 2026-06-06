@@ -23,7 +23,15 @@ class NotificationMarkReadView(APIView):
             Notification.objects.filter(user=request.user, is_read=False).update(
                 is_read=True, read_at=timezone.now()
             )
-        return Response({'status': 'marked as read'})
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'status': 'marked as read', 'unread_count': unread_count})
+
+
+class NotificationDeleteView(APIView):
+    def delete(self, request, pk):
+        Notification.objects.filter(pk=pk, user=request.user).update(is_deleted=True)
+        unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({'status': 'deleted', 'unread_count': unread_count}, status=status.HTTP_200_OK)
 
 
 class UnreadCountView(APIView):

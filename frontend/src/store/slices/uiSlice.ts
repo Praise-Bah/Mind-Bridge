@@ -8,7 +8,7 @@ interface UIState {
 
 const initialState: UIState = {
   sidebarOpen: true,
-  theme: (localStorage.getItem('theme') as 'light' | 'dark') || 'light',
+  theme: 'light', // Default to light, will be synced by ThemeProvider
   isMobile: false,
 }
 

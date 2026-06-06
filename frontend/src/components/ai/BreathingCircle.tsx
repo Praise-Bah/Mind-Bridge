@@ -50,7 +50,7 @@ export default function BreathingCircle({ isActive, className }: BreathingCircle
     <div className={cn('relative flex items-center justify-center', className)}>
       <div
         className={cn(
-          'absolute rounded-full bg-gradient-to-br from-[#00D4FF]/20 to-[#8B5CF6]/20',
+          'absolute rounded-full bg-gradient-to-br from-[#00BFFF]/20 to-[#7C5CBF]/20',
           'transition-all duration-1000 ease-in-out',
           isActive && currentPhase.phase === 'inhale' && 'w-64 h-64',
           isActive && currentPhase.phase === 'hold1' && 'w-64 h-64',
@@ -64,7 +64,7 @@ export default function BreathingCircle({ isActive, className }: BreathingCircle
 
       <div
         className={cn(
-          'relative rounded-full bg-gradient-to-br from-[#00D4FF] via-[#0EA5E9] to-[#8B5CF6]',
+          'relative rounded-full bg-gradient-to-br from-[#00BFFF] to-[#7C5CBF]',
           'flex items-center justify-center shadow-lg',
           'transition-all ease-in-out',
           isActive && currentPhase.phase === 'inhale' && 'w-48 h-48',
@@ -74,7 +74,7 @@ export default function BreathingCircle({ isActive, className }: BreathingCircle
         )}
         style={{
           transitionDuration: `${currentPhase.duration}ms`,
-          boxShadow: isActive ? '0 0 60px rgba(0, 212, 255, 0.4)' : 'none',
+          boxShadow: isActive ? '0 0 60px rgba(0, 191, 255, 0.4)' : 'none',
         }}
       >
         <div className="text-center text-white">

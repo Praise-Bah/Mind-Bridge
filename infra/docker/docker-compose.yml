@@ -1,0 +1,508 @@
+# Base Docker Compose — shared service definitions.
+# Use with docker-compose.dev.yml for development or docker-compose.prod.yml for VPS.
+# Run: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Redis DB allocation:
+#   0 = Celery broker
+#   1 = Django Channels layer (WebSocket)
+#   2 = Application cache
+#   3 = Event bus (Pub/Sub)
+
+version: '3.9'
+
+x-service-env: &service-env
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CHANNEL_LAYER_URL: redis://redis:6379/1
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-chat:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_chat_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d chat_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-community:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: community_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_community_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d community_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-professionals:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: professionals_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_professionals_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d professionals_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notifications:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_notifications_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-ai:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ai_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_ai_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-content:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: content_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_content_data:/var/lib/postgresql/data
+    networks: [mindbridge-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d content_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Nginx API Gateway ─────────────────────────────────────────────────────
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
+    depends_on:
+      - auth-service
+      - chat-service
+      - community-service
+      - professionals-service
+      - notification-service
+      - ai-service
+      - content-service
+      - admin-service
+    networks: [mindbridge-net]
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_URL: ""
+    volumes:
+      - ../../frontend/src:/app/src
+      - ../../frontend/public:/app/public
+    networks: [mindbridge-net]
+    expose: ["5173"]
+
+  # ── Auth Service (port 8001) ──────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-auth:5432/auth_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: auth-service
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8001"]
+
+  auth-celery:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    command: celery -A core.celery worker -Q celery -l info --concurrency=4
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-auth:5432/auth_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: auth-service
+    depends_on:
+      - auth-service
+    networks: [mindbridge-net]
+
+  celery-beat:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    command: celery -A core.celery beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-auth:5432/auth_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+    depends_on:
+      - auth-service
+    networks: [mindbridge-net]
+
+  # ── Chat Service (port 8002) ──────────────────────────────────────────────
+
+  chat-service:
+    build:
+      context: ../../services/chat-service
+      dockerfile: Dockerfile
+    command: daphne -b 0.0.0.0 -p 8002 --proxy-headers core.asgi:application
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-chat:5432/chat_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: chat-service
+      AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+    depends_on:
+      postgres-chat:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8002"]
+
+  chat-event-subscriber:
+    build:
+      context: ../../services/chat-service
+      dockerfile: Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-chat:5432/chat_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: chat-service
+    depends_on:
+      - chat-service
+    networks: [mindbridge-net]
+
+  # ── Community Service (port 8003) ─────────────────────────────────────────
+
+  community-service:
+    build:
+      context: ../../services/community-service
+      dockerfile: Dockerfile
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-community:5432/community_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: community-service
+    depends_on:
+      postgres-community:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8003"]
+
+  community-celery:
+    build:
+      context: ../../services/community-service
+      dockerfile: Dockerfile
+    command: celery -A core.celery worker -Q ai_tasks -l info --concurrency=2
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-community:5432/community_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: community-service
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    depends_on:
+      - community-service
+    networks: [mindbridge-net]
+
+  community-event-subscriber:
+    build:
+      context: ../../services/community-service
+      dockerfile: Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-community:5432/community_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: community-service
+    depends_on:
+      - community-service
+    networks: [mindbridge-net]
+
+  # ── Professionals Service (port 8004) ─────────────────────────────────────
+
+  professionals-service:
+    build:
+      context: ../../services/professionals-service
+      dockerfile: Dockerfile
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-professionals:5432/professionals_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: professionals-service
+    depends_on:
+      postgres-professionals:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8004"]
+
+  professionals-event-subscriber:
+    build:
+      context: ../../services/professionals-service
+      dockerfile: Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-professionals:5432/professionals_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: professionals-service
+    depends_on:
+      - professionals-service
+    networks: [mindbridge-net]
+
+  # ── Notification Service (port 8005) ──────────────────────────────────────
+
+  notification-service:
+    build:
+      context: ../../services/notification-service
+      dockerfile: Dockerfile
+    command: daphne -b 0.0.0.0 -p 8005 --proxy-headers core.asgi:application
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-notifications:5432/notifications_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: notification-service
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8005"]
+
+  notification-celery:
+    build:
+      context: ../../services/notification-service
+      dockerfile: Dockerfile
+    command: celery -A core.celery worker -Q notification_tasks -l info --concurrency=4
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-notifications:5432/notifications_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: notification-service
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+    depends_on:
+      - notification-service
+    networks: [mindbridge-net]
+
+  notification-event-subscriber:
+    build:
+      context: ../../services/notification-service
+      dockerfile: Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-notifications:5432/notifications_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: notification-service
+    depends_on:
+      - notification-service
+    networks: [mindbridge-net]
+
+  # ── AI Service (port 8006) ────────────────────────────────────────────────
+
+  ai-service:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-ai:5432/ai_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: ai-service
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8006"]
+
+  ai-celery:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    command: celery -A core.celery worker -Q ai_tasks -l info --concurrency=2
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-ai:5432/ai_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: ai-service
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    depends_on:
+      - ai-service
+    networks: [mindbridge-net]
+
+  ai-event-subscriber:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-ai:5432/ai_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: ai-service
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+    depends_on:
+      - ai-service
+    networks: [mindbridge-net]
+
+  # ── Content Service (port 8007) ───────────────────────────────────────────
+
+  content-service:
+    build:
+      context: ../../services/content-service
+      dockerfile: Dockerfile
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-content:5432/content_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: content-service
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+    depends_on:
+      postgres-content:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [mindbridge-net]
+    expose: ["8007"]
+
+  content-event-subscriber:
+    build:
+      context: ../../services/content-service
+      dockerfile: Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *service-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-content:5432/content_db
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: content-service
+    depends_on:
+      - content-service
+    networks: [mindbridge-net]
+
+  # ── Admin Service (port 8008) ─────────────────────────────────────────────
+
+  admin-service:
+    build:
+      context: ../../services/admin-service
+      dockerfile: Dockerfile
+    environment:
+      <<: *service-env
+      SECRET_KEY: ${AUTH_SECRET_KEY}
+      SERVICE_NAME: admin-service
+      AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+      COMMUNITY_SERVICE_INTERNAL_URL: http://community-service:8003
+      PROFESSIONALS_SERVICE_INTERNAL_URL: http://professionals-service:8004
+      NOTIFICATION_SERVICE_INTERNAL_URL: http://notification-service:8005
+      AI_SERVICE_INTERNAL_URL: http://ai-service:8006
+      CONTENT_SERVICE_INTERNAL_URL: http://content-service:8007
+    depends_on:
+      - auth-service
+      - community-service
+    networks: [mindbridge-net]
+    expose: ["8008"]
+
+volumes:
+  redis_data:
+  postgres_auth_data:
+  postgres_chat_data:
+  postgres_community_data:
+  postgres_professionals_data:
+  postgres_notifications_data:
+  postgres_ai_data:
+  postgres_content_data:
+
+networks:
+  mindbridge-net:
+    driver: bridge

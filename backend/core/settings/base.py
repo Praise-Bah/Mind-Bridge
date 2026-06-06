@@ -25,6 +25,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'channels',
     'django_filters',
@@ -43,6 +44,7 @@ LOCAL_APPS = [
     'apps.ai_assistant',
     'apps.journals',
     'apps.achievements',
+    'apps.admin_panel',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -144,12 +146,25 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Celery Settings
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+REDIS_EVENT_BUS_URL = config('REDIS_EVENT_BUS_URL', default='redis://localhost:6379/3')
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_TASK_QUEUES = {
+    'celery': {'exchange': 'celery'},
+    'ai_tasks': {'exchange': 'ai_tasks'},
+}
+CELERY_TASK_DEFAULT_QUEUE = 'celery'
+# Retry pending AI group evaluations every 5 minutes
+CELERY_BEAT_SCHEDULE = {
+    'retry-pending-group-evaluations': {
+        'task': 'apps.community.tasks.retry_pending_evaluations',
+        'schedule': 300,  # every 5 minutes
+    },
+}
 
 # Channel Layers
 CHANNEL_LAYERS = {
@@ -163,8 +178,52 @@ CHANNEL_LAYERS = {
 
 # External API Keys
 ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
+OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')
+OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='anthropic/claude-sonnet-4')
 YOUTUBE_API_KEY = config('YOUTUBE_API_KEY', default='')
 SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+SITE_URL = config('SITE_URL', default='http://localhost:3000')
+
+# Google OAuth
+GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
+GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
+
+# Email Configuration (SendGrid)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'
+EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@mindbridge.com')
+
+# Frontend URL (for email links)
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+
+# Available AI Models for Mental Health Companion (via OpenRouter)
+# These models are selected for their emotional intelligence and empathy
+OPENROUTER_MODELS = {
+    'claude-sonnet': {
+        'id': 'anthropic/claude-sonnet-4',
+        'name': 'Claude Sonnet',
+        'description': 'Excellent emotional intelligence and nuanced responses',
+    },
+    'gpt-4o': {
+        'id': 'openai/gpt-4o',
+        'name': 'GPT-4o',
+        'description': 'Strong conversational ability and empathy',
+    },
+    'gemini-pro': {
+        'id': 'google/gemini-pro-1.5',
+        'name': 'Gemini Pro',
+        'description': 'Great at understanding context and emotions',
+    },
+    'llama-3': {
+        'id': 'meta-llama/llama-3.1-70b-instruct',
+        'name': 'Llama 3.1 70B',
+        'description': 'Open-source model good for sensitive topics',
+    },
+}
 
 # DRF Spectacular (OpenAPI)
 SPECTACULAR_SETTINGS = {

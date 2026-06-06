@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py makemigrations notifications --name=\"add_group_notification_types\")",
+      "Bash(python manage.py migrate notifications)",
+      "Bash(python manage.py migrate token_blacklist)",
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(python -c \"from apps.professionals.views_pro import IncomingBookingsView, BookingActionView; print\\('OK'\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(set DJANGO_SETTINGS_MODULE=core.settings.development)",
+      "Bash(python manage.py check --deploy)",
+      "Bash(python manage.py shell -c \"from django.urls import reverse; print\\(reverse\\('pro_incoming_bookings'\\)\\); print\\(reverse\\('pro_booking_approve', kwargs={'pk': '00000000-0000-0000-0000-000000000000'}\\)\\); print\\(reverse\\('pro_booking_reject', kwargs={'pk': '00000000-0000-0000-0000-000000000000'}\\)\\)\")",
+      "Read(//c/Users/Praise Bah/.claude/projects/c--Users-Praise-Bah-Downloads-Mind-Bridge/memory/**)"
+    ]
+  }
+}

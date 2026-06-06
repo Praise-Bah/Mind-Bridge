@@ -9,8 +9,6 @@ User = get_user_model()
 @shared_task
 def send_daily_email_digest():
     """Send daily email digest to users with email_digest enabled."""
-    from .models import NotificationPreference
-    
     users_with_digest = User.objects.filter(
         notification_preferences__email_digest=True,
         email_notifications_enabled=True
@@ -28,16 +26,15 @@ def send_daily_email_digest():
 
 @shared_task
 def send_session_reminder(booking_id):
-    """Send session reminder notification."""
+    """Send session reminder notification via the notification service."""
     from apps.professionals.models import Booking
-    from .models import Notification
-    
-    booking = Booking.objects.select_related('user', 'professional__user').get(id=booking_id)
-    
-    Notification.objects.create(
-        user=booking.user,
+    from apps.notifications.publisher import publish_notification
+
+    booking = Booking.objects.select_related('professional__user').get(id=booking_id)
+    publish_notification(
+        user_id=booking.user_id,
         notification_type='reminder',
         title='Session Reminder',
         message=f'Your session with {booking.professional.user.get_full_name()} is coming up.',
-        data={'booking_id': str(booking.id)}
+        data={'booking_id': str(booking.id)},
     )

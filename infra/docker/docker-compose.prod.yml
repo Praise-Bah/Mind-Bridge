@@ -1,0 +1,634 @@
+# Production Docker Compose — standalone file (NOT an override of phase6).
+#
+# Use ONLY this file on the VPS:
+#   cd infra/docker
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up --build -d
+#
+# Prerequisites on the VPS:
+#   1. Fill in .env.prod (copy from .env.prod.example and set all values)
+#   2. If serving frontend locally: cd ../../frontend && npm run build
+#      (creates frontend/dist/ which Nginx serves as static files)
+#      If using Vercel for the frontend: you can skip the build and set
+#      VITE_API_URL=http://YOUR_VPS_IP on Vercel instead.
+
+x-auth-env: &auth-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: auth_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-auth
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  SITE_URL: ${SITE_URL}
+  FRONTEND_URL: ${FRONTEND_URL}
+
+x-community-env: &community-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: community_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-community
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+  SITE_URL: ${SITE_URL}
+
+x-professionals-env: &professionals-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: professionals_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-professionals
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+  SITE_URL: ${SITE_URL}
+
+x-content-env: &content-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: content_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-content
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+  SITE_URL: ${SITE_URL}
+
+x-ai-env: &ai-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: ai_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-ai
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  SITE_URL: ${SITE_URL}
+
+x-notification-env: &notification-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: notifications_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-notifications
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  SITE_URL: ${SITE_URL}
+
+x-chat-env: &chat-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  POSTGRES_DB: chat_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-chat
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  SITE_URL: ${SITE_URL}
+
+x-admin-env: &admin-env
+  DJANGO_SETTINGS_MODULE: core.settings.production
+  DEBUG: "False"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+  COMMUNITY_SERVICE_INTERNAL_URL: http://community-service:8003
+  PROFESSIONALS_SERVICE_INTERNAL_URL: http://professionals-service:8004
+  CHAT_SERVICE_INTERNAL_URL: http://chat-service:8002
+  CONTENT_SERVICE_INTERNAL_URL: http://content-service:8007
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  SITE_URL: ${SITE_URL}
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru --save 60 1
+    volumes:
+      - redis_data:/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── PostgreSQL (one DB per service) ──────────────────────────────────────
+
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-community:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: community_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_community_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d community_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-professionals:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: professionals_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_professionals_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d professionals_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-content:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: content_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_content_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d content_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-ai:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ai_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_ai_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notifications:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_notifications_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-chat:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_chat_data:/var/lib/postgresql/data
+    networks: [prod-net]
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d chat_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Auth Service ──────────────────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application
+               --bind 0.0.0.0:8001 --workers 4 --threads 2
+               --max-requests 1000 --max-requests-jitter 100
+               --timeout 30 --graceful-timeout 15 --access-logfile -"
+    environment:
+      <<: *auth-env
+    depends_on:
+      postgres-auth: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '1.0', memory: 512M}
+
+  auth-celery:
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+    command: celery -A core.celery worker -Q celery -l info --concurrency=2
+    environment:
+      <<: *auth-env
+    depends_on: [auth-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
+  # ── Community Service ─────────────────────────────────────────────────────
+
+  community-service:
+    build:
+      context: ../..
+      dockerfile: services/community-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application
+               --bind 0.0.0.0:8003 --workers 4 --threads 2
+               --max-requests 1000 --timeout 30 --access-logfile -"
+    environment:
+      <<: *community-env
+    depends_on:
+      postgres-community: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '1.0', memory: 512M}
+
+  community-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/community-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *community-env
+    depends_on: [community-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  community-celery:
+    build:
+      context: ../..
+      dockerfile: services/community-service/Dockerfile
+    command: celery -A core.celery worker -Q celery -l info --concurrency=2
+    environment:
+      <<: *community-env
+    depends_on: [community-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
+  # ── Professionals Service ─────────────────────────────────────────────────
+
+  professionals-service:
+    build:
+      context: ../..
+      dockerfile: services/professionals-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application
+               --bind 0.0.0.0:8004 --workers 4 --threads 2
+               --max-requests 1000 --timeout 30 --access-logfile -"
+    environment:
+      <<: *professionals-env
+    depends_on:
+      postgres-professionals: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '1.0', memory: 512M}
+
+  professionals-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/professionals-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *professionals-env
+    depends_on: [professionals-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  # ── Content Service ───────────────────────────────────────────────────────
+
+  content-service:
+    build:
+      context: ../..
+      dockerfile: services/content-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application
+               --bind 0.0.0.0:8007 --workers 4 --threads 2
+               --max-requests 1000 --timeout 30 --access-logfile -"
+    environment:
+      <<: *content-env
+    depends_on:
+      postgres-content: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
+  content-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/content-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *content-env
+    depends_on: [content-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  # ── AI Service ────────────────────────────────────────────────────────────
+
+  ai-service:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application
+               --bind 0.0.0.0:8006 --workers 2 --worker-class gthread --threads 4
+               --max-requests 500 --timeout 120 --access-logfile -"
+    environment:
+      <<: *ai-env
+    depends_on:
+      postgres-ai: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '2.0', memory: 1G}
+
+  ai-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *ai-env
+    depends_on: [ai-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  ai-celery:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: celery -A core.celery worker -Q ai_tasks -l info --concurrency=2
+    environment:
+      <<: *ai-env
+    depends_on: [ai-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '1.0', memory: 512M}
+
+  # ── Notification Service ──────────────────────────────────────────────────
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8005 --proxy-headers core.asgi:application"
+    environment:
+      <<: *notification-env
+    depends_on:
+      postgres-notifications: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
+  notification-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *notification-env
+    depends_on: [notification-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  notification-celery:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: celery -A core.celery worker -Q notification_tasks -l info --concurrency=4
+    environment:
+      <<: *notification-env
+    depends_on: [notification-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
+  # ── Chat Service ──────────────────────────────────────────────────────────
+
+  chat-service:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8002 --proxy-headers core.asgi:application"
+    environment:
+      <<: *chat-env
+    depends_on:
+      postgres-chat: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      auth-service: {condition: service_started}
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
+  chat-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *chat-env
+    depends_on: [chat-service]
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  # ── Admin Service (stateless aggregator) ─────────────────────────────────
+
+  admin-service:
+    build:
+      context: ../..
+      dockerfile: services/admin-service/Dockerfile
+    command: >
+      gunicorn core.wsgi:application
+        --bind 0.0.0.0:8008 --workers 2 --threads 2
+        --timeout 30 --access-logfile -
+    environment:
+      <<: *admin-env
+    depends_on:
+      - auth-service
+      - community-service
+      - professionals-service
+      - chat-service
+      - content-service
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.25', memory: 128M}
+
+  # ── Nginx ─────────────────────────────────────────────────────────────────
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
+      - ../nginx/cors_params:/etc/nginx/cors_params:ro
+      - ../../frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - auth-service
+      - community-service
+      - professionals-service
+      - content-service
+      - ai-service
+      - chat-service
+      - notification-service
+      - admin-service
+    networks: [prod-net]
+    restart: always
+
+volumes:
+  redis_data:
+  postgres_auth_data:
+  postgres_community_data:
+  postgres_professionals_data:
+  postgres_content_data:
+  postgres_ai_data:
+  postgres_notifications_data:
+  postgres_chat_data:
+
+networks:
+  prod-net:
+    driver: bridge

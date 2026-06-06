@@ -1,5 +1,5 @@
 import api from './api'
-import type { Professional, Booking } from '@/types'
+import type { Professional, Booking, Review, Availability, Specialization } from '@/types'
 
 export const professionalService = {
   async getProfessionals(params?: Record<string, string>): Promise<Professional[]> {
@@ -10,16 +10,6 @@ export const professionalService = {
   async getProfessional(id: string): Promise<Professional> {
     const response = await api.get(`/professionals/${id}/`)
     return response.data
-  },
-
-  async getAvailability(professionalId: string): Promise<unknown[]> {
-    const response = await api.get(`/professionals/${professionalId}/availability/`)
-    return response.data
-  },
-
-  async getReviews(professionalId: string): Promise<unknown[]> {
-    const response = await api.get(`/professionals/${professionalId}/reviews/`)
-    return response.data.results || response.data
   },
 
   async getBookings(): Promise<Booking[]> {
@@ -36,7 +26,34 @@ export const professionalService = {
     await api.post(`/professionals/bookings/${bookingId}/cancel/`)
   },
 
-  async createReview(bookingId: string, data: { rating: number; comment: string }): Promise<void> {
-    await api.post(`/professionals/bookings/${bookingId}/review/`, data)
+  async createReview(bookingId: string, data: { rating: number; comment: string }): Promise<Review> {
+    const response = await api.post(`/professionals/bookings/${bookingId}/review/`, data)
+    return response.data
+  },
+
+  async getSpecializations(): Promise<Specialization[]> {
+    const response = await api.get('/professionals/specializations/')
+    return response.data.results || response.data
+  },
+
+  async toggleFavourite(id: string): Promise<{ is_favourite: boolean }> {
+    const response = await api.post(`/professionals/${id}/favourite/`)
+    return response.data
+  },
+
+  async getFavourites(): Promise<Professional[]> {
+    const response = await api.get('/professionals/favourites/')
+    const items: Array<{ professional: Professional }> = response.data.results || response.data
+    return items.map(item => item.professional)
+  },
+
+  async getAvailability(professionalId: string): Promise<Availability[]> {
+    const response = await api.get(`/professionals/${professionalId}/availability/`)
+    return response.data.results || response.data
+  },
+
+  async getReviews(professionalId: string): Promise<Review[]> {
+    const response = await api.get(`/professionals/${professionalId}/reviews/`)
+    return response.data.results || response.data
   },
 }

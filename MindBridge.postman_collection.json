@@ -1,0 +1,819 @@
+{
+  "info": {
+    "name": "MindBridge API",
+    "_postman_id": "mindbridge-api-collection",
+    "description": "Complete API collection for MindBridge mental health platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api/v1", "type": "string" },
+    { "key": "access_token", "value": "SET_YOUR_ACCESS_TOKEN_HERE", "type": "string" },
+    { "key": "refresh_token", "value": "SET_YOUR_REFRESH_TOKEN_HERE", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" },
+    { "key": "pro_id", "value": "", "type": "string" },
+    { "key": "booking_id", "value": "", "type": "string" },
+    { "key": "post_id", "value": "", "type": "string" },
+    { "key": "group_slug", "value": "", "type": "string" },
+    { "key": "session_id", "value": "", "type": "string" },
+    { "key": "video_id", "value": "", "type": "string" },
+    { "key": "journal_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "01 - Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register/", "host": ["{{base_url}}"], "path": ["auth", "register", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"username\": \"testuser123\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"SecurePass123!\",\n  \"password_confirm\": \"SecurePass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access) {",
+                  "  pm.collectionVariables.set('access_token', json.access);",
+                  "  pm.collectionVariables.set('refresh_token', json.refresh);",
+                  "  console.log('Tokens saved!');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login/", "host": ["{{base_url}}"], "path": ["auth", "login", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access) {",
+                  "  pm.collectionVariables.set('access_token', json.access);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/refresh/", "host": ["{{base_url}}"], "path": ["auth", "refresh", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refresh_token}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": { "raw": "{{base_url}}/auth/password/change/", "host": ["{{base_url}}"], "path": ["auth", "password", "change", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"SecurePass123!\",\n  \"new_password\": \"NewSecurePass456!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - User Profile",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/users/profile/", "host": ["{{base_url}}"], "path": ["users", "profile", ""] }
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/users/profile/", "host": ["{{base_url}}"], "path": ["users", "profile", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"I am testing the MindBridge API\",\n  \"timezone\": \"UTC\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Log Mood",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/users/moods/", "host": ["{{base_url}}"], "path": ["users", "moods", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mood_score\": 4,\n  \"note\": \"Feeling good today!\",\n  \"recorded_date\": \"2026-06-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Moods",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/users/moods/", "host": ["{{base_url}}"], "path": ["users", "moods", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Community",
+      "item": [
+        {
+          "name": "Get Feed",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/community/feed/", "host": ["{{base_url}}"], "path": ["community", "feed", ""] }
+          }
+        },
+        {
+          "name": "List Groups",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/community/groups/", "host": ["{{base_url}}"], "path": ["community", "groups", ""] }
+          }
+        },
+        {
+          "name": "Get Group Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/community/groups/{{group_slug}}/", "host": ["{{base_url}}"], "path": ["community", "groups", "{{group_slug}}", ""] }
+          }
+        },
+        {
+          "name": "Join Group",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/community/groups/{{group_slug}}/join/", "host": ["{{base_url}}"], "path": ["community", "groups", "{{group_slug}}", "join", ""] }
+          }
+        },
+        {
+          "name": "List Posts in Group",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/community/groups/{{group_slug}}/posts/", "host": ["{{base_url}}"], "path": ["community", "groups", "{{group_slug}}", "posts", ""] }
+          }
+        },
+        {
+          "name": "Create Post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) { pm.collectionVariables.set('post_id', json.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/community/groups/{{group_slug}}/posts/", "host": ["{{base_url}}"], "path": ["community", "groups", "{{group_slug}}", "posts", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello MindBridge community!\",\n  \"mood_tag\": \"neutral\",\n  \"is_anonymous\": false\n}"
+            }
+          }
+        },
+        {
+          "name": "React to Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/community/posts/{{post_id}}/react/", "host": ["{{base_url}}"], "path": ["community", "posts", "{{post_id}}", "react", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reaction_type\": \"like\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Comment on Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/community/posts/{{post_id}}/comments/", "host": ["{{base_url}}"], "path": ["community", "posts", "{{post_id}}", "comments", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Great post! Thanks for sharing.\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Professionals",
+      "item": [
+        {
+          "name": "List Professionals",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/", "host": ["{{base_url}}"], "path": ["professionals", ""] }
+          }
+        },
+        {
+          "name": "List Specializations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/specializations/", "host": ["{{base_url}}"], "path": ["professionals", "specializations", ""] }
+          }
+        },
+        {
+          "name": "Get Professional Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/{{pro_id}}/", "host": ["{{base_url}}"], "path": ["professionals", "{{pro_id}}", ""] }
+          }
+        },
+        {
+          "name": "Get Professional Availability",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/{{pro_id}}/availability/", "host": ["{{base_url}}"], "path": ["professionals", "{{pro_id}}", "availability", ""] }
+          }
+        },
+        {
+          "name": "Get Professional Reviews",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/{{pro_id}}/reviews/", "host": ["{{base_url}}"], "path": ["professionals", "{{pro_id}}", "reviews", ""] }
+          }
+        },
+        {
+          "name": "Toggle Favourite Professional",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/{{pro_id}}/favourite/", "host": ["{{base_url}}"], "path": ["professionals", "{{pro_id}}", "favourite", ""] }
+          }
+        },
+        {
+          "name": "My Favourite Professionals",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/favourites/", "host": ["{{base_url}}"], "path": ["professionals", "favourites", ""] }
+          }
+        },
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) { pm.collectionVariables.set('booking_id', json.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/professionals/bookings/", "host": ["{{base_url}}"], "path": ["professionals", "bookings", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional\": \"{{pro_id}}\",\n  \"scheduled_at\": \"2026-06-10T10:00:00Z\",\n  \"session_type\": \"video\",\n  \"notes\": \"First session\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/bookings/", "host": ["{{base_url}}"], "path": ["professionals", "bookings", ""] }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/professionals/bookings/{{booking_id}}/cancel/", "host": ["{{base_url}}"], "path": ["professionals", "bookings", "{{booking_id}}", "cancel", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Videos",
+      "item": [
+        {
+          "name": "List Videos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/", "host": ["{{base_url}}"], "path": ["videos", ""] }
+          }
+        },
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/categories/", "host": ["{{base_url}}"], "path": ["videos", "categories", ""] }
+          }
+        },
+        {
+          "name": "Search Videos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/search/?q=anxiety", "host": ["{{base_url}}"], "path": ["videos", "search", ""], "query": [{ "key": "q", "value": "anxiety" }] }
+          }
+        },
+        {
+          "name": "Get Video Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/{{video_id}}/", "host": ["{{base_url}}"], "path": ["videos", "{{video_id}}", ""] }
+          }
+        },
+        {
+          "name": "Toggle Bookmark Video",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/{{video_id}}/bookmark/", "host": ["{{base_url}}"], "path": ["videos", "{{video_id}}", "bookmark", ""] }
+          }
+        },
+        {
+          "name": "Record Watch",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/{{video_id}}/watch/", "host": ["{{base_url}}"], "path": ["videos", "{{video_id}}", "watch", ""] }
+          }
+        },
+        {
+          "name": "Rate Video",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/videos/{{video_id}}/rate/", "host": ["{{base_url}}"], "path": ["videos", "{{video_id}}", "rate", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"rating\": 5\n}" }
+          }
+        },
+        {
+          "name": "My Bookmarked Videos",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/bookmarks/", "host": ["{{base_url}}"], "path": ["videos", "bookmarks", ""] }
+          }
+        },
+        {
+          "name": "Watch History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/videos/history/", "host": ["{{base_url}}"], "path": ["videos", "history", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - AI Assistant",
+      "item": [
+        {
+          "name": "List AI Sessions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/ai/sessions/", "host": ["{{base_url}}"], "path": ["ai", "sessions", ""] }
+          }
+        },
+        {
+          "name": "Create AI Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) { pm.collectionVariables.set('session_id', json.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/ai/sessions/", "host": ["{{base_url}}"], "path": ["ai", "sessions", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"First AI Session\"\n}" }
+          }
+        },
+        {
+          "name": "Send AI Chat Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/ai/chat/", "host": ["{{base_url}}"], "path": ["ai", "chat", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"session_id\": \"{{session_id}}\",\n  \"message\": \"I've been feeling anxious lately, can you help?\"\n}" }
+          }
+        },
+        {
+          "name": "Detect Mood from Text",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/ai/mood/detect/", "host": ["{{base_url}}"], "path": ["ai", "mood", "detect", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"message\": \"I feel really happy and grateful today!\"\n}" }
+          }
+        },
+        {
+          "name": "Get Session Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/ai/sessions/{{session_id}}/summary/", "host": ["{{base_url}}"], "path": ["ai", "sessions", "{{session_id}}", "summary", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Journals",
+      "item": [
+        {
+          "name": "List Journal Entries",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/journals/", "host": ["{{base_url}}"], "path": ["journals", ""] }
+          }
+        },
+        {
+          "name": "Create Journal Entry",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) { pm.collectionVariables.set('journal_id', json.id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/journals/", "host": ["{{base_url}}"], "path": ["journals", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Today was a productive day. I completed my tasks and felt focused.\",\n  \"mood_score\": 4,\n  \"is_private\": true\n}" }
+          }
+        },
+        {
+          "name": "Get Journal Entry",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/journals/{{journal_id}}/", "host": ["{{base_url}}"], "path": ["journals", "{{journal_id}}", ""] }
+          }
+        },
+        {
+          "name": "Get Daily Prompt",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/journals/prompt/", "host": ["{{base_url}}"], "path": ["journals", "prompt", ""] }
+          }
+        },
+        {
+          "name": "Update Journal Entry",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/journals/{{journal_id}}/", "host": ["{{base_url}}"], "path": ["journals", "{{journal_id}}", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"content\": \"Updated journal entry content.\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Journal Entry",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/journals/{{journal_id}}/", "host": ["{{base_url}}"], "path": ["journals", "{{journal_id}}", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/notifications/", "host": ["{{base_url}}"], "path": ["notifications", ""] }
+          }
+        },
+        {
+          "name": "Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/notifications/unread-count/", "host": ["{{base_url}}"], "path": ["notifications", "unread-count", ""] }
+          }
+        },
+        {
+          "name": "Mark All Read",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/notifications/mark-read/", "host": ["{{base_url}}"], "path": ["notifications", "mark-read", ""] }
+          }
+        },
+        {
+          "name": "Notification Preferences",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/notifications/preferences/", "host": ["{{base_url}}"], "path": ["notifications", "preferences", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Achievements",
+      "item": [
+        {
+          "name": "All Achievements",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/achievements/", "host": ["{{base_url}}"], "path": ["achievements", ""] }
+          }
+        },
+        {
+          "name": "My Achievements",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/achievements/my-achievements/", "host": ["{{base_url}}"], "path": ["achievements", "my-achievements", ""] }
+          }
+        },
+        {
+          "name": "My Streak",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/achievements/streak/", "host": ["{{base_url}}"], "path": ["achievements", "streak", ""] }
+          }
+        },
+        {
+          "name": "My Progress",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/achievements/progress/", "host": ["{{base_url}}"], "path": ["achievements", "progress", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Chat",
+      "item": [
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/chat/conversations/", "host": ["{{base_url}}"], "path": ["chat", "conversations", ""] }
+          }
+        },
+        {
+          "name": "Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/chat/conversations/", "host": ["{{base_url}}"], "path": ["chat", "conversations", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"participant_id\": \"OTHER_USER_UUID_HERE\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Pro Dashboard",
+      "item": [
+        {
+          "name": "Today's Sessions",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/today-sessions/", "host": ["{{base_url}}"], "path": ["pro", "today-sessions", ""] }
+          }
+        },
+        {
+          "name": "Patient List",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/patients/", "host": ["{{base_url}}"], "path": ["pro", "patients", ""] }
+          }
+        },
+        {
+          "name": "My Availability",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/availability/", "host": ["{{base_url}}"], "path": ["pro", "availability", ""] }
+          }
+        },
+        {
+          "name": "Set Availability",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{base_url}}/pro/availability/", "host": ["{{base_url}}"], "path": ["pro", "availability", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"date\": \"2026-06-10\",\n  \"start_time\": \"09:00:00\",\n  \"end_time\": \"17:00:00\",\n  \"is_available\": true\n}" }
+          }
+        },
+        {
+          "name": "Earnings Summary",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/earnings/", "host": ["{{base_url}}"], "path": ["pro", "earnings", ""] }
+          }
+        },
+        {
+          "name": "Request Payout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/earnings/request-payout/", "host": ["{{base_url}}"], "path": ["pro", "earnings", "request-payout", ""] }
+          }
+        },
+        {
+          "name": "Session Notes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/session-notes/", "host": ["{{base_url}}"], "path": ["pro", "session-notes", ""] }
+          }
+        },
+        {
+          "name": "Pro Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/pro/profile/", "host": ["{{base_url}}"], "path": ["pro", "profile", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Admin Panel",
+      "item": [
+        {
+          "name": "Platform Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/admin-panel/stats/", "host": ["{{base_url}}"], "path": ["admin-panel", "stats", ""] }
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/admin-panel/users/", "host": ["{{base_url}}"], "path": ["admin-panel", "users", ""] }
+          }
+        },
+        {
+          "name": "Pending Professionals",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/admin-panel/professionals/pending/", "host": ["{{base_url}}"], "path": ["admin-panel", "professionals", "pending", ""] }
+          }
+        },
+        {
+          "name": "List Reports",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": { "raw": "{{base_url}}/admin-panel/reports/", "host": ["{{base_url}}"], "path": ["admin-panel", "reports", ""] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Health Check",
+      "item": [
+        {
+          "name": "API Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health/", "host": ["{{base_url}}"], "path": ["health", ""] }
+          }
+        },
+        {
+          "name": "Swagger Docs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "http://localhost:8000/api/docs/", "host": ["http://localhost:8000"], "path": ["api", "docs", ""] }
+          }
+        }
+      ]
+    }
+  ]
+}

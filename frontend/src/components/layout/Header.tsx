@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { RootState } from '@/store'
@@ -11,6 +12,18 @@ export default function Header() {
   const { user } = useSelector((state: RootState) => state.auth)
   const { unreadCount } = useSelector((state: RootState) => state.notifications)
   const { theme } = useSelector((state: RootState) => state.ui)
+  const prevCountRef = useRef(unreadCount)
+  const [badgeAnimate, setBadgeAnimate] = useState(false)
+
+  useEffect(() => {
+    if (unreadCount < prevCountRef.current) {
+      setBadgeAnimate(true)
+      const t = setTimeout(() => setBadgeAnimate(false), 400)
+      prevCountRef.current = unreadCount
+      return () => clearTimeout(t)
+    }
+    prevCountRef.current = unreadCount
+  }, [unreadCount])
 
   const handleLogout = () => {
     dispatch(logout())
@@ -30,10 +43,14 @@ export default function Header() {
         <button onClick={toggleTheme} className="p-2 hover:bg-accent rounded-full">
           {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </button>
-        <button className="p-2 hover:bg-accent rounded-full relative">
+        <button
+          onClick={() => navigate('/notifications')}
+          className="p-2 hover:bg-accent rounded-full relative"
+          title="Notifications"
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            <span className={`absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center ${badgeAnimate ? 'animate-bell-badge-decrement' : ''}`}>
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}

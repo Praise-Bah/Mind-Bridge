@@ -34,4 +34,37 @@ export const journalService = {
       return null
     }
   },
+
+  async getInsights(): Promise<{
+    insights: any
+    streak: number
+    mood_trends: any[]
+    total_entries: number
+    entries_with_mood: number
+  }> {
+    const response = await api.get('/journals/insights/')
+    return response.data
+  },
+
+  async getMoodAffirmation(): Promise<{ affirmation: string }> {
+    const response = await api.get('/journals/affirmation/')
+    return response.data
+  },
+
+  async getReflectionPrompt(): Promise<{ prompt: string }> {
+    const response = await api.get('/journals/reflection/')
+    return response.data
+  },
+
+  async getStatistics(): Promise<{
+    total_entries: number
+    entries_this_month: number
+    current_streak: number
+    mood_distribution: Record<number, number>
+    top_tags: Array<[string, number]>
+    avg_words_per_entry: number
+  }> {
+    const response = await api.get('/journals/statistics/')
+    return response.data
+  },
 }

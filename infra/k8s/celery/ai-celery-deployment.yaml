@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-celery
+  namespace: mindbridge
+  labels:
+    app: ai-celery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-celery
+  template:
+    metadata:
+      labels:
+        app: ai-celery
+    spec:
+      containers:
+        - name: ai-celery
+          image: mindbridge/ai-service:latest
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - core.celery
+            - worker
+            - -Q
+            - ai_tasks
+            - -l
+            - info
+            - --concurrency=2  # AI calls are CPU/IO heavy — fewer concurrent workers
+          envFrom:
+            - configMapRef:
+                name: common-env
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: SERVICE_NAME
+              value: ai-service
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: AI_DATABASE_URL
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 2000m
+              memory: 1Gi

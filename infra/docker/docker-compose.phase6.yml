@@ -1,0 +1,667 @@
+# Phase 6 Docker Compose — FINAL state. Monolith fully decommissioned.
+#
+# All 8 extracted services + 8 PostgreSQL DBs + Redis + Nginx + Frontend.
+#
+# Services:
+#   - auth-service:8001       + auth-celery
+#   - chat-service:8002       + chat-event-subscriber
+#   - community-service:8003  + community-celery + community-event-subscriber
+#   - professionals-service:8004 + professionals-event-subscriber
+#   - notification-service:8005 + notification-event-subscriber + notification-celery
+#   - ai-service:8006         + ai-event-subscriber + ai-celery
+#   - content-service:8007    + content-event-subscriber
+#   - admin-service:8008      (stateless aggregator, no own DB)
+#
+# Usage:
+#   cd infra/docker
+#   docker compose -f docker-compose.phase6.yml --env-file .env.dev up --build
+#
+# First-run seeding (run once after services are healthy):
+#   docker compose -f docker-compose.phase6.yml exec community-service \
+#     python manage.py seed_snapshots --api-url http://auth-service:8001
+#   docker compose -f docker-compose.phase6.yml exec professionals-service \
+#     python manage.py seed_snapshots --api-url http://auth-service:8001
+
+x-auth-env: &auth-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: auth_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-auth
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  SITE_URL: http://localhost:3000
+  FRONTEND_URL: http://localhost:3000
+
+x-community-env: &community-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: community_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-community
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+  SITE_URL: http://localhost:3000
+
+x-professionals-env: &professionals-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: professionals_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-professionals
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+  SITE_URL: http://localhost:3000
+
+x-content-env: &content-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: content_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-content
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+  SITE_URL: http://localhost:3000
+
+x-ai-env: &ai-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: ai_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-ai
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  SITE_URL: http://localhost:3000
+
+x-notification-env: &notification-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: notifications_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-notifications
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  SITE_URL: http://localhost:3000
+
+x-chat-env: &chat-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: chat_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-chat
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  MONOLITH_INTERNAL_URL: http://auth-service:8001
+  SITE_URL: http://localhost:3000
+
+x-admin-env: &admin-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  AUTH_SERVICE_INTERNAL_URL: http://auth-service:8001
+  COMMUNITY_SERVICE_INTERNAL_URL: http://community-service:8003
+  PROFESSIONALS_SERVICE_INTERNAL_URL: http://professionals-service:8004
+  CHAT_SERVICE_INTERNAL_URL: http://chat-service:8002
+  CONTENT_SERVICE_INTERNAL_URL: http://content-service:8007
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  SITE_URL: http://localhost:3000
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_final_data:/data
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── PostgreSQL (one per service) ──────────────────────────────────────────
+
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    ports:
+      - "5431:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d auth_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-community:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: community_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_community_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d community_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-professionals:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: professionals_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_professionals_data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d professionals_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-content:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: content_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_content_data:/var/lib/postgresql/data
+    ports:
+      - "5438:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d content_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-ai:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ai_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_ai_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notifications:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_notifications_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-chat:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_chat_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks: [final-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d chat_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Auth Service ──────────────────────────────────────────────────────────
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application --bind 0.0.0.0:8001 --workers 4 --timeout 30"
+    environment:
+      <<: *auth-env
+    volumes:
+      - ../../services/auth-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [final-net]
+
+  auth-celery:
+    build:
+      context: ../..
+      dockerfile: services/auth-service/Dockerfile
+    command: celery -A core.celery worker -Q celery -l info --concurrency=2
+    environment:
+      <<: *auth-env
+    volumes:
+      - ../../services/auth-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - auth-service
+    networks: [final-net]
+
+  # ── Community Service ─────────────────────────────────────────────────────
+
+  community-service:
+    build:
+      context: ../..
+      dockerfile: services/community-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application --bind 0.0.0.0:8003 --workers 4 --timeout 30"
+    environment:
+      <<: *community-env
+    volumes:
+      - ../../services/community-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres-community:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [final-net]
+
+  community-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/community-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *community-env
+    volumes:
+      - ../../services/community-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - community-service
+    networks: [final-net]
+
+  community-celery:
+    build:
+      context: ../..
+      dockerfile: services/community-service/Dockerfile
+    command: celery -A core.celery worker -Q celery -l info --concurrency=2
+    environment:
+      <<: *community-env
+    volumes:
+      - ../../services/community-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - community-service
+    networks: [final-net]
+
+  # ── Professionals Service ─────────────────────────────────────────────────
+
+  professionals-service:
+    build:
+      context: ../..
+      dockerfile: services/professionals-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application --bind 0.0.0.0:8004 --workers 4 --timeout 30"
+    environment:
+      <<: *professionals-env
+    volumes:
+      - ../../services/professionals-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres-professionals:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [final-net]
+
+  professionals-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/professionals-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *professionals-env
+    volumes:
+      - ../../services/professionals-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - professionals-service
+    networks: [final-net]
+
+  # ── Content Service ───────────────────────────────────────────────────────
+
+  content-service:
+    build:
+      context: ../..
+      dockerfile: services/content-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application --bind 0.0.0.0:8007 --workers 4 --timeout 30"
+    environment:
+      <<: *content-env
+    volumes:
+      - ../../services/content-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres-content:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [final-net]
+
+  content-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/content-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *content-env
+    volumes:
+      - ../../services/content-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - content-service
+    networks: [final-net]
+
+  # ── AI Service ────────────────────────────────────────────────────────────
+
+  ai-service:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn core.wsgi:application --bind 0.0.0.0:8006 --workers 2 --timeout 120"
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [final-net]
+
+  ai-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - ai-service
+    networks: [final-net]
+
+  ai-celery:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: celery -A core.celery worker -Q ai_tasks -l info --concurrency=2
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - ai-service
+    networks: [final-net]
+
+  # ── Notification Service ──────────────────────────────────────────────────
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8005 --proxy-headers core.asgi:application"
+    environment:
+      <<: *notification-env
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [final-net]
+
+  notification-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *notification-env
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - notification-service
+    networks: [final-net]
+
+  notification-celery:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: celery -A core.celery worker -Q notification_tasks -l info --concurrency=4
+    environment:
+      <<: *notification-env
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - notification-service
+    networks: [final-net]
+
+  # ── Chat Service ──────────────────────────────────────────────────────────
+
+  chat-service:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8002 --proxy-headers core.asgi:application"
+    environment:
+      <<: *chat-env
+    volumes:
+      - ../../services/chat-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres-chat:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks: [final-net]
+
+  chat-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *chat-env
+    volumes:
+      - ../../services/chat-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - chat-service
+    networks: [final-net]
+
+  # ── Admin Service (stateless aggregator) ─────────────────────────────────
+
+  admin-service:
+    build:
+      context: ../..
+      dockerfile: services/admin-service/Dockerfile
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8008 --workers 2 --timeout 30
+    environment:
+      <<: *admin-env
+    volumes:
+      - ../../services/admin-service:/app
+    ports:
+      - "8008:8008"
+    depends_on:
+      - auth-service
+      - community-service
+      - professionals-service
+      - chat-service
+      - content-service
+    networks: [final-net]
+
+  # ── Nginx (Phase 6 — final routing, no monolith) ──────────────────────────
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.phase6.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
+    depends_on:
+      - auth-service
+      - community-service
+      - professionals-service
+      - content-service
+      - ai-service
+      - chat-service
+      - notification-service
+      - admin-service
+      - frontend
+    networks: [final-net]
+
+  # ── Frontend ──────────────────────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_URL: ""
+    volumes:
+      - ../../frontend/src:/app/src
+      - ../../frontend/public:/app/public
+    ports:
+      - "5173:5173"
+    networks: [final-net]
+
+volumes:
+  redis_final_data:
+  postgres_auth_data:
+  postgres_community_data:
+  postgres_professionals_data:
+  postgres_content_data:
+  postgres_ai_data:
+  postgres_notifications_data:
+  postgres_chat_data:
+
+networks:
+  final-net:
+    driver: bridge

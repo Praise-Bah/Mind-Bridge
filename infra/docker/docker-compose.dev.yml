@@ -1,0 +1,158 @@
+# Development overrides: code hot-reload via volume mounts, Django runserver.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.dev up
+
+version: '3.9'
+
+services:
+
+  auth-service:
+    command: python manage.py runserver 0.0.0.0:8001
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/auth-service:/app
+      - ../../shared:/shared
+
+  auth-celery:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/auth-service:/app
+      - ../../shared:/shared
+
+  chat-service:
+    # Keep Daphne even in dev (WebSocket requires ASGI)
+    command: daphne -b 0.0.0.0 -p 8002 core.asgi:application
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/chat-service:/app
+      - ../../shared:/shared
+
+  chat-event-subscriber:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/chat-service:/app
+      - ../../shared:/shared
+
+  community-service:
+    command: python manage.py runserver 0.0.0.0:8003
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/community-service:/app
+      - ../../shared:/shared
+
+  community-celery:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/community-service:/app
+      - ../../shared:/shared
+
+  community-event-subscriber:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/community-service:/app
+      - ../../shared:/shared
+
+  professionals-service:
+    command: python manage.py runserver 0.0.0.0:8004
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/professionals-service:/app
+      - ../../shared:/shared
+
+  professionals-event-subscriber:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/professionals-service:/app
+      - ../../shared:/shared
+
+  notification-service:
+    command: daphne -b 0.0.0.0 -p 8005 core.asgi:application
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared:/shared
+
+  notification-celery:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared:/shared
+
+  notification-event-subscriber:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared:/shared
+
+  ai-service:
+    command: python manage.py runserver 0.0.0.0:8006
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared:/shared
+
+  ai-celery:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared:/shared
+
+  ai-event-subscriber:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared:/shared
+
+  content-service:
+    command: python manage.py runserver 0.0.0.0:8007
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/content-service:/app
+      - ../../shared:/shared
+
+  content-event-subscriber:
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+    volumes:
+      - ../../services/content-service:/app
+      - ../../shared:/shared
+
+  admin-service:
+    command: python manage.py runserver 0.0.0.0:8008
+    environment:
+      DJANGO_SETTINGS_MODULE: core.settings.development
+      DEBUG: "True"
+    volumes:
+      - ../../services/admin-service:/app
+      - ../../shared:/shared
+
+  nginx:
+    volumes:
+      - ../nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
+
+  frontend:
+    ports:
+      - "5173:5173"

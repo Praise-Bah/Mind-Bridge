@@ -148,7 +148,7 @@ export default function AICompanionPage() {
           <div className="p-3">
             <button
               onClick={createNewSession}
-              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#0EA5E9] to-[#00D4FF] text-white hover:opacity-90 transition-opacity"
+              className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#00BFFF] to-[#7C5CBF] text-white hover:opacity-90 transition-opacity shadow-sm"
             >
               <Plus className="w-4 h-4" />
               <span>New Chat</span>
@@ -211,7 +211,7 @@ export default function AICompanionPage() {
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center p-8 text-center">
               <AIAvatar size="lg" animated />
-              <h2 className="mt-6 text-xl font-semibold bg-gradient-to-r from-[#00D4FF] via-[#0EA5E9] to-[#8B5CF6] bg-clip-text text-transparent">
+              <h2 className="mt-6 text-xl font-semibold bg-gradient-to-r from-[#00BFFF] via-[#7C5CBF] to-[#4F46E5] bg-clip-text text-transparent">
                 Hello! I'm your AI Companion
               </h2>
               <p className="mt-2 text-muted-foreground max-w-md">

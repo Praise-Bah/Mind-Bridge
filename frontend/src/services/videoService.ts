@@ -34,4 +34,16 @@ export const videoService = {
     const response = await api.get('/videos/history/')
     return response.data.results || response.data
   },
+
+  async searchVideos(q: string, mood?: string): Promise<Video[]> {
+    const params: Record<string, string> = { q }
+    if (mood) params.mood = mood
+    const response = await api.get('/videos/search/', { params })
+    return response.data.results || response.data
+  },
+
+  async rateVideo(videoId: string, isHelpful: boolean): Promise<{ status: string; helpful_count: number; not_helpful_count: number }> {
+    const response = await api.post(`/videos/${videoId}/rate/`, { is_helpful: isHelpful })
+    return response.data
+  },
 }

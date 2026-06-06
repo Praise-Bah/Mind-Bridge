@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { X, Play, Pause, RotateCcw } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import BreathingCircle from './BreathingCircle'
 
 interface BreathingExerciseProps {

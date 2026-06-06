@@ -1,0 +1,376 @@
+# Phase 3 Docker Compose — Strangler Fig transition state.
+#
+# Extracted services (running in isolation with own DBs):
+#   - notification-service  (port 8005) + notification-event-subscriber
+#   - chat-service          (port 8002) + chat-event-subscriber
+#
+# Still on monolith (port 8000):
+#   - auth/users, community, professionals, AI HTTP,
+#     journals, videos, achievements, admin-panel
+#
+# AI Service runs as event workers only (no HTTP), same DB as monolith.
+# Nginx (nginx.phase3.conf) routes chat + notifications to extracted services.
+#
+# Usage:
+#   cd infra/docker
+#   docker compose -f docker-compose.phase3.yml --env-file .env.dev up --build
+#
+# First-run seeding (after services start):
+#   docker compose -f docker-compose.phase3.yml exec chat-service \
+#     python manage.py seed_snapshots --api-url http://monolith:8000
+
+x-monolith-env: &monolith-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+
+x-ai-env: &ai-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  SITE_URL: http://localhost:3000
+
+x-notification-env: &notification-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: notifications_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-notifications
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+  SITE_URL: http://localhost:3000
+
+x-chat-env: &chat-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  POSTGRES_DB: chat_db
+  POSTGRES_USER: ${POSTGRES_USER}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_HOST: postgres-chat
+  POSTGRES_PORT: "5432"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN}
+  MONOLITH_INTERNAL_URL: http://monolith:8000
+  SITE_URL: http://localhost:3000
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_phase3_data:/data
+    networks: [phase3-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Monolith + AI service share this DB
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mindbridge_dev
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_phase3_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks: [phase3-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d mindbridge_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notifications:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notifications_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_notifications_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks: [phase3-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d notifications_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-chat:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: chat_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_chat_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks: [phase3-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d chat_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Monolith (serves all non-extracted endpoints) ─────────────────────────
+
+  monolith:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [phase3-net]
+
+  monolith-celery:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: celery -A core.celery worker -Q celery -l info --concurrency=4
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - monolith
+    networks: [phase3-net]
+
+  monolith-community-subscriber:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: python manage.py subscribe_events
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - monolith
+    networks: [phase3-net]
+
+  monolith-beat:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: celery -A core.celery beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - monolith
+    networks: [phase3-net]
+
+  # ── AI Service — event workers only (no HTTP in Phase 3) ─────────────────
+
+  ai-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [phase3-net]
+
+  ai-celery:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: celery -A core.celery worker -Q ai_tasks -l info --concurrency=2
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [phase3-net]
+
+  # ── Notification Service (Phase 2 extraction) ─────────────────────────────
+
+  notification-service:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8005 --proxy-headers core.asgi:application"
+    environment:
+      <<: *notification-env
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres-notifications:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [phase3-net]
+
+  notification-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *notification-env
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - notification-service
+    networks: [phase3-net]
+
+  notification-celery:
+    build:
+      context: ../..
+      dockerfile: services/notification-service/Dockerfile
+    command: celery -A core.celery worker -Q notification_tasks -l info --concurrency=4
+    environment:
+      <<: *notification-env
+    volumes:
+      - ../../services/notification-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - notification-service
+    networks: [phase3-net]
+
+  # ── Chat Service (Phase 3 extraction) ─────────────────────────────────────
+
+  chat-service:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             daphne -b 0.0.0.0 -p 8002 --proxy-headers core.asgi:application"
+    environment:
+      <<: *chat-env
+    volumes:
+      - ../../services/chat-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres-chat:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      monolith:
+        condition: service_started
+    networks: [phase3-net]
+
+  chat-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/chat-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *chat-env
+    volumes:
+      - ../../services/chat-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - chat-service
+    networks: [phase3-net]
+
+  # ── Nginx (Phase 3 routing) ───────────────────────────────────────────────
+
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../nginx/nginx.phase3.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
+    depends_on:
+      - monolith
+      - chat-service
+      - notification-service
+      - frontend
+    networks: [phase3-net]
+
+  # ── Frontend (Vite dev server) ─────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_URL: ""
+    volumes:
+      - ../../frontend/src:/app/src
+      - ../../frontend/public:/app/public
+    ports:
+      - "5173:5173"
+    networks: [phase3-net]
+
+volumes:
+  redis_phase3_data:
+  postgres_phase3_data:
+  postgres_notifications_data:
+  postgres_chat_data:
+
+networks:
+  phase3-net:
+    driver: bridge

@@ -22,7 +22,7 @@ export default function AIAvatar({ size = 'md', animated = true, className }: AI
   return (
     <div
       className={cn(
-        'relative rounded-full bg-gradient-to-br from-[#00D4FF] via-[#0EA5E9] to-[#8B5CF6] flex items-center justify-center',
+        'relative rounded-full bg-gradient-to-br from-[#00BFFF] to-[#7C5CBF] flex items-center justify-center',
         sizeClasses[size],
         animated && 'animate-pulse-slow',
         className

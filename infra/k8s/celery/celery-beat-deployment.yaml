@@ -1,0 +1,52 @@
+# Celery Beat — runs once (replicas: 1 always), schedules periodic tasks.
+# Runs in the auth-service image because Beat uses auth DB for the scheduler table.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  namespace: mindbridge
+  labels:
+    app: celery-beat
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      containers:
+        - name: celery-beat
+          image: mindbridge/auth-service:latest
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - core.celery
+            - beat
+            - -l
+            - info
+            - --scheduler
+            - django_celery_beat.schedulers:DatabaseScheduler
+          envFrom:
+            - configMapRef:
+                name: common-env
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: SERVICE_NAME
+              value: auth-service
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: AUTH_DATABASE_URL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

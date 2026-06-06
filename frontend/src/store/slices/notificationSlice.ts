@@ -38,6 +38,16 @@ const notificationSlice = createSlice({
       state.notifications.forEach(n => n.is_read = true)
       state.unreadCount = 0
     },
+    removeNotification: (state, action: PayloadAction<string>) => {
+      const notification = state.notifications.find(n => n.id === action.payload)
+      if (notification && !notification.is_read) {
+        state.unreadCount = Math.max(0, state.unreadCount - 1)
+      }
+      state.notifications = state.notifications.filter(n => n.id !== action.payload)
+    },
+    setUnreadCount: (state, action: PayloadAction<number>) => {
+      state.unreadCount = action.payload
+    },
     setConnected: (state, action: PayloadAction<boolean>) => {
       state.isConnected = action.payload
     },
@@ -49,6 +59,8 @@ export const {
   addNotification,
   markAsRead,
   markAllAsRead,
+  removeNotification,
+  setUnreadCount,
   setConnected,
 } = notificationSlice.actions
 

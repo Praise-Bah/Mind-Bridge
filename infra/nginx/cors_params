@@ -1,0 +1,3 @@
+add_header 'Access-Control-Allow-Origin' '*' always;
+add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+add_header 'Access-Control-Allow-Headers' 'Accept,Authorization,Cache-Control,Content-Type,X-Requested-With' always;

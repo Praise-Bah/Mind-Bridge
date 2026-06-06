@@ -1,0 +1,206 @@
+# Phase 1 Docker Compose — Strangler Fig transition state.
+#
+# Topology:
+#   - Monolith (backend/) still serves ALL HTTP traffic on port 8000
+#   - Nginx routes /api/v1/* → monolith (not the future extracted services)
+#   - AI service runs ONLY as event workers (no HTTP in Phase 1):
+#       • ai-event-subscriber: listens for community.group_approval_requested
+#       • ai-celery: runs the multi-model evaluation task
+#   - Monolith community-event-subscriber: listens for ai.group_evaluation_complete
+#   - One shared Redis (DB 0=Celery, DB 2=cache, DB 3=event bus)
+#   - One shared PostgreSQL (both monolith and AI service use it)
+#
+# Usage:
+#   docker compose -f docker-compose.phase1.yml --env-file .env.dev up
+#
+# To start Celery workers for the monolith alongside:
+#   docker compose -f docker-compose.phase1.yml --env-file .env.dev \
+#     run --rm monolith-celery celery -A core.celery worker -l info
+
+x-monolith-env: &monolith-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+
+x-ai-env: &ai-env
+  DJANGO_SETTINGS_MODULE: core.settings.development
+  DEBUG: "True"
+  REDIS_URL: redis://redis:6379/0
+  REDIS_CACHE_URL: redis://redis:6379/2
+  REDIS_EVENT_BUS_URL: redis://redis:6379/3
+  SECRET_KEY: ${AUTH_SECRET_KEY}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  SITE_URL: http://localhost:3000
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_phase1_data:/data
+    networks: [phase1-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: mindbridge_dev
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_phase1_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks: [phase1-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d mindbridge_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Monolith (Django dev server — all HTTP endpoints) ─────────────────────
+
+  monolith:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [phase1-net]
+
+  # ── Monolith Celery worker (handles community.evaluate_group_task) ─────────
+
+  monolith-celery:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: celery -A core.celery worker -Q celery -l info --concurrency=4
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - monolith
+    networks: [phase1-net]
+
+  # ── Monolith event subscriber (receives ai.group_evaluation_complete) ──────
+
+  monolith-community-subscriber:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: python manage.py subscribe_events
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - monolith
+    networks: [phase1-net]
+
+  # ── Monolith Celery Beat (retry_pending_evaluations every 5 min) ──────────
+
+  monolith-beat:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile.dev
+    command: celery -A core.celery beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      <<: *monolith-env
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mindbridge_dev
+    volumes:
+      - ../../backend:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      - monolith
+    networks: [phase1-net]
+
+  # ── AI Service event subscriber (receives community.group_approval_requested)
+
+  ai-event-subscriber:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: python manage.py subscribe_events
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [phase1-net]
+
+  # ── AI Service Celery worker (runs the actual multi-model evaluation) ──────
+
+  ai-celery:
+    build:
+      context: ../..
+      dockerfile: services/ai-service/Dockerfile
+    command: celery -A core.celery worker -Q ai_tasks -l info --concurrency=2
+    environment:
+      <<: *ai-env
+    volumes:
+      - ../../services/ai-service:/app
+      - ../../shared/mindbridge-common:/shared/mindbridge-common
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks: [phase1-net]
+
+  # ── Frontend (Vite dev server) ─────────────────────────────────────────────
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      VITE_API_URL: ""
+    volumes:
+      - ../../frontend/src:/app/src
+      - ../../frontend/public:/app/public
+    ports:
+      - "5173:5173"
+    networks: [phase1-net]
+
+volumes:
+  redis_phase1_data:
+  postgres_phase1_data:
+
+networks:
+  phase1-net:
+    driver: bridge

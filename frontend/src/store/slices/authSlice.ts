@@ -40,8 +40,17 @@ export const register = createAsyncThunk(
       const response = await authService.register(data)
       return response
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string } } }
-      return rejectWithValue(err.response?.data?.detail || 'Registration failed')
+      const err = error as { response?: { data?: Record<string, unknown> } }
+      const data = err.response?.data
+      if (!data) return rejectWithValue('Registration failed')
+      if (typeof data.detail === 'string') return rejectWithValue(data.detail)
+      const messages = Object.entries(data)
+        .map(([field, msgs]) => {
+          const list = Array.isArray(msgs) ? msgs.join(' ') : String(msgs)
+          return `${field}: ${list}`
+        })
+        .join(' | ')
+      return rejectWithValue(messages || 'Registration failed')
     }
   }
 )
@@ -76,6 +85,13 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload
     },
+    setCredentials: (state, action: PayloadAction<{ access: string; refresh: string; user: User | null }>) => {
+      state.token = action.payload.access
+      state.user = action.payload.user
+      state.isAuthenticated = true
+      localStorage.setItem('token', action.payload.access)
+      localStorage.setItem('refreshToken', action.payload.refresh)
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -109,5 +125,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { logout, clearError, setUser } = authSlice.actions
+export const { logout, clearError, setUser, setCredentials } = authSlice.actions
 export default authSlice.reducer

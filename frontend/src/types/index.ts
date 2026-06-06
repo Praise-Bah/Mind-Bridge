@@ -11,7 +11,103 @@ export interface User {
   is_professional: boolean
   is_verified: boolean
   is_online: boolean
+  is_staff: boolean
   last_seen: string | null
+  created_at: string
+  // Privacy settings
+  anonymous_mode: boolean
+  profile_visibility: 'public' | 'friends' | 'private'
+  allow_messages_from: 'everyone' | 'friends' | 'nobody'
+  // Appearance settings
+  theme: 'light' | 'dark' | 'system'
+  text_size: 'small' | 'medium' | 'large'
+  // Notification settings
+  daily_notification_time: string
+  email_notifications_enabled: boolean
+  push_notifications_enabled: boolean
+}
+
+export interface AdminStats {
+  total_users: number
+  new_users_today: number
+  total_professionals: number
+  pending_professionals: number
+  active_sessions_today: number
+  total_messages: number
+  unresolved_reports: number
+}
+
+export interface AdminUser {
+  id: string
+  email: string
+  username: string
+  first_name: string
+  last_name: string
+  full_name: string
+  avatar: string | null
+  is_staff: boolean
+  is_professional: boolean
+  is_verified: boolean
+  is_active: boolean
+  role: 'admin' | 'professional' | 'user'
+  date_joined: string
+  created_at: string
+}
+
+export interface PendingProfessional {
+  id: string
+  user_email: string
+  user_name: string
+  bio: string
+  license_number: string
+  years_of_experience: number
+  specializations: string[]
+  credential_url: string | null
+  status: string
+  rejection_reason: string
+  created_at: string
+}
+
+export interface ProfessionalApplicationStatus {
+  exists: boolean
+  status?: 'pending' | 'approved' | 'rejected'
+  rejection_reason?: string
+  created_at?: string
+}
+
+export interface PendingGroup {
+  id: string
+  name: string
+  slug: string
+  description: string
+  group_type: string
+  custom_type: string
+  visibility: string
+  cover_image_url: string | null
+  creation_reason: string
+  created_by_username: string
+  created_by_email: string
+  ai_total_score: number | null
+  ai_review_summary: string
+  ai_review_scores: { model: string; score: number; reasoning: string }[]
+  approval_status: string
+  rejection_reason: string
+  review_step: string
+  created_at: string
+}
+
+export interface ModerationReport {
+  id: string
+  reporter_name: string
+  reason: string
+  details: string
+  is_resolved: boolean
+  post: string | null
+  comment: string | null
+  post_content: string | null
+  comment_content: string | null
+  content_author: string | null
+  content_author_id: string | null
   created_at: string
 }
 
@@ -65,6 +161,8 @@ export interface Notification {
   title: string
   message: string
   data: Record<string, unknown>
+  sender_name: string | null
+  sender_avatar: string | null
   is_read: boolean
   read_at: string | null
   created_at: string
@@ -75,24 +173,42 @@ export interface CommunityGroup {
   name: string
   slug: string
   description: string
-  group_type: string
+  group_type: string | null
+  custom_type?: string
   cover_image: string | null
   member_count: number
   is_member: boolean
+  is_moderator: boolean
   is_active: boolean
+  is_user_created: boolean
+  created_by: string | null
+  created_by_username?: string
+  visibility: 'public' | 'private'
+  invite_code: string
+  invite_url?: string
+  is_approved: boolean
+  approval_status: 'pending' | 'approved' | 'rejected'
+  approved_at: string | null
+  rejection_reason?: string
 }
 
 export interface Post {
   id: string
   group: string
+  group_name: string
+  group_slug: string
   author: string
   author_name: string
   content: string
   image: string | null
+  mood_tag: string | null
   is_anonymous: boolean
   is_pinned: boolean
   comments_count: number
   reactions_summary: Record<string, number>
+  user_reactions: string[]
+  is_saved: boolean
+  expires_at: string | null
   created_at: string
   updated_at: string
 }
@@ -106,6 +222,9 @@ export interface Comment {
   is_anonymous: boolean
   parent: string | null
   replies: Comment[]
+  user_can_delete: boolean
+  is_saved: boolean
+  expires_at: string | null
   created_at: string
 }
 
@@ -114,16 +233,19 @@ export interface Professional {
   user: string
   user_name: string
   user_avatar: string | null
+  is_online: boolean
   title: string
   bio: string
   credentials: string
   years_of_experience: number
   specializations: Specialization[]
+  gender: string
   languages: string[]
   session_rate: number
   intro_video: string | null
   average_rating: number | null
   review_count: number
+  is_favourite: boolean
   status: string
   created_at: string
 }
@@ -145,7 +267,25 @@ export interface Booking {
   description: string
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
   notes: string
+  has_review: boolean
   created_at: string
+}
+
+export interface Review {
+  id: string
+  rating: number
+  comment: string
+  reviewer_name: string
+  created_at: string
+}
+
+export interface Availability {
+  id: string
+  weekday: number
+  weekday_name: string
+  start_time: string
+  end_time: string
+  is_available: boolean
 }
 
 export interface Video {
@@ -163,6 +303,10 @@ export interface Video {
   is_featured: boolean
   view_count: number
   is_bookmarked: boolean
+  is_completed: boolean
+  user_rating: 'helpful' | 'not_helpful' | null
+  helpful_count: number
+  not_helpful_count: number
   created_at: string
 }
 
@@ -222,4 +366,54 @@ export interface UserStreak {
   current_streak: number
   longest_streak: number
   last_activity_date: string | null
+}
+
+export interface SessionNote {
+  id: string
+  patient: string
+  patient_name: string
+  patient_avatar: string | null
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PatientEntry {
+  user_id: string
+  user_name: string
+  user_avatar: string | null
+  last_session_date: string | null
+  mood_trend: number[]
+}
+
+export interface EarningsSummary {
+  sessions_this_month: number
+  total_earnings: number
+  pending_payout: number
+  payout_requested: boolean
+  monthly: { month: string; sessions: number; earnings: number }[]
+}
+
+export interface ProBooking extends Booking {
+  patient_name: string
+  patient_avatar: string | null
+  patient_id: string
+}
+
+export interface UserGoal {
+  id: string
+  title: string
+  description: string
+  category: 'wellness' | 'social' | 'professional' | 'personal'
+  target_date: string
+  is_completed: boolean
+  progress: number
+  created_at: string
+  updated_at: string
+}
+
+export interface MoodCalendarDay {
+  date: string
+  mood_score: number | null
+  has_entry: boolean
 }

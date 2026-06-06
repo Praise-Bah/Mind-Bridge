@@ -1,0 +1,147 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mindbridge-ingress
+  namespace: mindbridge
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    # AI endpoint: disable buffering for SSE streaming
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    # TLS via cert-manager + Let's Encrypt (install cert-manager first)
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - mindbridge.com
+      secretName: mindbridge-tls
+  rules:
+    - host: mindbridge.com
+      http:
+        paths:
+          # Auth Service
+          - path: /api/v1/auth/
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8001
+          - path: /api/v1/users/
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 8001
+
+          # Chat Service (HTTP + WebSocket)
+          - path: /api/v1/chat/
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8002
+          - path: /ws/chat/
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-service
+                port:
+                  number: 8002
+
+          # Community Service
+          - path: /api/v1/community/
+            pathType: Prefix
+            backend:
+              service:
+                name: community-service
+                port:
+                  number: 8003
+
+          # Professionals Service
+          - path: /api/v1/professionals/
+            pathType: Prefix
+            backend:
+              service:
+                name: professionals-service
+                port:
+                  number: 8004
+          - path: /api/v1/pro/
+            pathType: Prefix
+            backend:
+              service:
+                name: professionals-service
+                port:
+                  number: 8004
+
+          # Notification Service (HTTP + WebSocket)
+          - path: /api/v1/notifications/
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8005
+          - path: /ws/notifications/
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 8005
+
+          # AI Service
+          - path: /api/v1/ai/
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8006
+
+          # Content Service (journals, videos, achievements)
+          - path: /api/v1/journals/
+            pathType: Prefix
+            backend:
+              service:
+                name: content-service
+                port:
+                  number: 8007
+          - path: /api/v1/videos/
+            pathType: Prefix
+            backend:
+              service:
+                name: content-service
+                port:
+                  number: 8007
+          - path: /api/v1/achievements/
+            pathType: Prefix
+            backend:
+              service:
+                name: content-service
+                port:
+                  number: 8007
+
+          # Admin Service (restrict to internal at the network policy level too)
+          - path: /api/v1/admin-panel/
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-service
+                port:
+                  number: 8008
+
+          # Frontend (React SPA — must be last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

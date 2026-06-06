@@ -12,12 +12,19 @@ export const notificationService = {
     return response.data.unread_count
   },
 
-  async markAsRead(id: string): Promise<void> {
-    await api.post(`/notifications/${id}/mark-read/`)
+  async markAsRead(id: string): Promise<{ unread_count: number }> {
+    const response = await api.post(`/notifications/${id}/mark-read/`)
+    return response.data
   },
 
-  async markAllAsRead(): Promise<void> {
-    await api.post('/notifications/mark-read/')
+  async markAllAsRead(): Promise<{ unread_count: number }> {
+    const response = await api.post('/notifications/mark-read/')
+    return response.data
+  },
+
+  async deleteNotification(id: string): Promise<{ unread_count: number }> {
+    const response = await api.delete(`/notifications/${id}/delete/`)
+    return response.data
   },
 
   async getPreferences(): Promise<Record<string, boolean>> {

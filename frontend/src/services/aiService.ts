@@ -90,11 +90,13 @@ export const aiService = {
 
   streamMessage(message: string, sessionId?: string): EventSource {
     const token = localStorage.getItem('token')
-    const url = new URL('/api/v1/ai/chat/stream/', window.location.origin)
+    // In production VITE_API_URL points to the VPS (e.g. https://your-vps.com/api/v1).
+    // In dev it is unset, so we fall back to the current origin (proxied by Vite).
+    const apiBase = ((import.meta as any).env?.VITE_API_URL || `${window.location.origin}/api/v1`).replace(/\/$/, '')
+    const url = new URL(`${apiBase}/ai/chat/stream/`)
     url.searchParams.set('message', message)
     if (sessionId) url.searchParams.set('session_id', sessionId)
     if (token) url.searchParams.set('token', token)
-    
     return new EventSource(url.toString())
   },
 }

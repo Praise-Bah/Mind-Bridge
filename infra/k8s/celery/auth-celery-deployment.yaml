@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-celery
+  namespace: mindbridge
+  labels:
+    app: auth-celery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-celery
+  template:
+    metadata:
+      labels:
+        app: auth-celery
+    spec:
+      containers:
+        - name: auth-celery
+          image: mindbridge/auth-service:latest
+          imagePullPolicy: Always
+          command:
+            - celery
+            - -A
+            - core.celery
+            - worker
+            - -Q
+            - celery
+            - -l
+            - info
+            - --concurrency=4
+          envFrom:
+            - configMapRef:
+                name: common-env
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: SERVICE_NAME
+              value: auth-service
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: AUTH_DATABASE_URL
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

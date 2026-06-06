@@ -33,7 +33,7 @@ class Video(BaseModel):
     duration_seconds = models.PositiveIntegerField(default=0)
     category = models.ForeignKey(VideoCategory, on_delete=models.SET_NULL, null=True, related_name='videos')
     mood_tags = models.JSONField(default=list)
-    is_featured = models.BooleanField(default=False)
+    is_featured = models.BooleanField(default=False, db_index=True)
     view_count = models.PositiveIntegerField(default=0)
 
     class Meta:
@@ -65,3 +65,14 @@ class WatchHistory(BaseModel):
     class Meta:
         db_table = 'watch_history'
         ordering = ['-watched_at']
+
+
+class VideoRating(BaseModel):
+    """User helpful/not helpful rating for a video."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='video_ratings')
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='ratings')
+    is_helpful = models.BooleanField()
+
+    class Meta:
+        db_table = 'video_ratings'
+        unique_together = ['user', 'video']

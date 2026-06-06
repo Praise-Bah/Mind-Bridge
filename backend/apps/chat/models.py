@@ -43,12 +43,15 @@ class Message(BaseModel):
     content = models.TextField()
     message_type = models.CharField(max_length=10, choices=MESSAGE_TYPES, default='text')
     attachment = models.FileField(upload_to='chat_attachments/', blank=True, null=True)
-    is_read = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'messages'
         ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['conversation', 'is_read', 'is_deleted'], name='msg_conv_read_deleted_idx'),
+        ]
 
     def __str__(self):
         return f"Message from {self.sender.username}"

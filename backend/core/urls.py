@@ -6,9 +6,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from apps.users.views import InternalUserSnapshotView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Internal service-to-service endpoint — NOT routed through Nginx
+    path('internal/users/snapshots/', InternalUserSnapshotView.as_view(), name='internal_user_snapshots'),
     
     # API v1 endpoints
     path('api/v1/', include([
@@ -23,6 +27,9 @@ urlpatterns = [
         path('journals/', include('apps.journals.urls')),
         path('achievements/', include('apps.achievements.urls')),
         path('health/', include('apps.users.urls_health')),
+        path('admin-panel/', include('apps.admin_panel.urls')),
+        path('pro/', include('apps.professionals.urls_pro')),
+        path('landing/', include('apps.landing.urls')),
     ])),
     
     # API Documentation
