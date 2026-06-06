@@ -574,11 +574,13 @@ services:
     image: nginx:1.25-alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ../nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ../nginx/proxy_params:/etc/nginx/proxy_params:ro
       - ../nginx/cors_params:/etc/nginx/cors_params:ro
       - ../../frontend/dist:/usr/share/nginx/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - auth-service
       - community-service
