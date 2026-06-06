@@ -1,75 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { 
-  Brain, 
-  MessageCircle, 
-  Video, 
-  Users, 
-  Shield, 
+import {
+  Brain,
+  MessageCircle,
+  Video,
+  Users,
+  Shield,
   Heart,
   Sparkles,
   ArrowRight,
   Play,
-  ChevronLeft,
-  ChevronRight,
-  Star,
   CheckCircle2,
-  X
+  X,
+  Menu,
+  EyeOff
 } from 'lucide-react'
-
-// Color palette from logo: cyan (#00D4FF), purple (#8B5CF6), blue (#3B82F6)
-
-interface Testimonial {
-  id: number
-  name: string
-  role: string
-  content: string
-  avatar: string
-  rating: number
-}
-
-const testimonials: Testimonial[] = [
-  {
-    id: 1,
-    name: "Sarah M.",
-    role: "User since 2024",
-    content: "MindBridge has been a lifeline for me. The AI companion is always there when I need someone to talk to, and connecting with a real therapist was seamless.",
-    avatar: "SM",
-    rating: 5
-  },
-  {
-    id: 2,
-    name: "James K.",
-    role: "User since 2024",
-    content: "The mood-based video recommendations are incredibly accurate. It's like the app knows exactly what I need to feel better.",
-    avatar: "JK",
-    rating: 5
-  },
-  {
-    id: 3,
-    name: "Emily R.",
-    role: "User since 2025",
-    content: "Finding a therapist who understands me was always hard. MindBridge made it easy to connect with the right professional.",
-    avatar: "ER",
-    rating: 5
-  },
-  {
-    id: 4,
-    name: "Michael T.",
-    role: "User since 2024",
-    content: "The community groups have helped me realize I'm not alone. Sharing experiences with others who understand is incredibly healing.",
-    avatar: "MT",
-    rating: 5
-  },
-  {
-    id: 5,
-    name: "Dr. Amanda L.",
-    role: "Licensed Therapist",
-    content: "As a professional on MindBridge, I've been able to reach and help more people than ever before. The platform is intuitive and secure.",
-    avatar: "AL",
-    rating: 5
-  }
-]
 
 const features = [
   {
@@ -116,19 +61,32 @@ const steps = [
   }
 ]
 
+const differentiators = [
+  {
+    icon: EyeOff,
+    title: "Anonymous by Default",
+    description: "Share freely in community spaces without revealing your identity. Your privacy is a feature, not an afterthought.",
+    color: "from-cyan-500 to-blue-500"
+  },
+  {
+    icon: Heart,
+    title: "Built With Real Empathy",
+    description: "MindBridge was created by students at The ICT University in Cameroon who witnessed the mental health gap firsthand and decided to build something about it.",
+    color: "from-rose-500 to-pink-500"
+  },
+  {
+    icon: Brain,
+    title: "AI First, Human When Ready",
+    description: "Start a conversation with our AI any time of day or night. When you're ready for a deeper connection, licensed professionals are one tap away.",
+    color: "from-purple-500 to-violet-500"
+  }
+]
+
 export default function LandingPage() {
-  const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set())
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({})
-
-  // Auto-scroll testimonials
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
 
   // Scroll reveal animation
   useEffect(() => {
@@ -155,6 +113,7 @@ export default function LandingPage() {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' })
     }
+    setMobileMenuOpen(false)
   }
 
   return (
@@ -164,16 +123,14 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <img src="/logo.png" alt="MindBridge" className="h-8 w-auto" />
-            
+
+            {/* Desktop nav */}
             <div className="hidden md:flex items-center gap-8">
               <button onClick={() => scrollToSection('features')} className="text-gray-300 hover:text-white transition-colors">
                 Features
               </button>
               <button onClick={() => scrollToSection('how-it-works')} className="text-gray-300 hover:text-white transition-colors">
                 How It Works
-              </button>
-              <button onClick={() => scrollToSection('testimonials')} className="text-gray-300 hover:text-white transition-colors">
-                Testimonials
               </button>
               <button onClick={() => scrollToSection('professionals')} className="text-gray-300 hover:text-white transition-colors">
                 For Professionals
@@ -184,20 +141,50 @@ export default function LandingPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
               >
                 Log in
               </Link>
-              <Link 
-                to="/register" 
+              <Link
+                to="/register"
                 className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full font-medium hover:shadow-lg hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105"
               >
                 Get Started
               </Link>
+              {/* Mobile hamburger */}
+              <button
+                className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
             </div>
           </div>
+
+          {/* Mobile dropdown menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-white/10 py-4 space-y-1 pb-4">
+              <button onClick={() => scrollToSection('features')} className="block w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                Features
+              </button>
+              <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                How It Works
+              </button>
+              <button onClick={() => scrollToSection('professionals')} className="block w-full text-left px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                For Professionals
+              </button>
+              <Link
+                to="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+              >
+                About
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -218,7 +205,7 @@ export default function LandingPage() {
               Your Mental Health Companion
             </span>
           </div>
-          
+
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
             Find Peace of Mind
             <br />
@@ -226,22 +213,22 @@ export default function LandingPage() {
               One Conversation at a Time
             </span>
           </h1>
-          
+
           <p className="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto mb-10">
-            Connect with AI companions, licensed professionals, and a supportive community. 
+            Connect with AI companions, licensed professionals, and a supportive community.
             Your journey to better mental health starts here.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
-              to="/register" 
+            <Link
+              to="/register"
               className="group px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full font-semibold text-lg hover:shadow-xl hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105 flex items-center gap-2 animate-pulse-subtle"
             >
               Get Started Free
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </Link>
-            
-            <button 
+
+            <button
               onClick={() => setIsVideoModalOpen(true)}
               className="px-8 py-4 bg-white/5 border border-white/10 rounded-full font-semibold text-lg hover:bg-white/10 transition-all duration-300 flex items-center gap-2"
             >
@@ -250,20 +237,20 @@ export default function LandingPage() {
             </button>
           </div>
 
-          {/* Stats */}
-          <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">10K+</div>
-              <div className="text-gray-400 text-sm mt-1">Active Users</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">500+</div>
-              <div className="text-gray-400 text-sm mt-1">Professionals</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-pink-400 to-cyan-400 bg-clip-text text-transparent">24/7</div>
-              <div className="text-gray-400 text-sm mt-1">AI Support</div>
-            </div>
+          {/* Honest platform highlights */}
+          <div className="mt-16 flex flex-wrap justify-center gap-4">
+            <span className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400" />
+              Free to Join
+            </span>
+            <span className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+              24/7 AI Support
+            </span>
+            <span className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-sm text-gray-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400" />
+              Anonymous Mode
+            </span>
           </div>
         </div>
 
@@ -276,8 +263,8 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section 
-        id="features" 
+      <section
+        id="features"
         ref={(el) => (sectionRefs.current['features'] = el)}
         className={`py-24 px-4 transition-all duration-1000 ${visibleSections.has('features') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
       >
@@ -294,7 +281,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <div 
+              <div
                 key={index}
                 className="group p-6 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 hover:-translate-y-2 transition-all duration-300 cursor-pointer"
               >
@@ -310,7 +297,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Section */}
-      <section 
+      <section
         id="how-it-works"
         ref={(el) => (sectionRefs.current['how-it-works'] = el)}
         className={`py-24 px-4 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent transition-all duration-1000 ${visibleSections.has('how-it-works') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
@@ -327,7 +314,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-8">
             {steps.map((step, index) => (
-              <div 
+              <div
                 key={index}
                 className="relative p-8 rounded-2xl bg-white/5 border border-white/10"
                 style={{ animationDelay: `${index * 200}ms` }}
@@ -337,7 +324,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
                 <p className="text-gray-400">{step.description}</p>
-                
+
                 {index < steps.length - 1 && (
                   <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-cyan-500 to-purple-500" />
                 )}
@@ -347,85 +334,51 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section 
-        id="testimonials"
-        ref={(el) => (sectionRefs.current['testimonials'] = el)}
-        className={`py-24 px-4 transition-all duration-1000 ${visibleSections.has('testimonials') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+      {/* Built Different Section (replaces fake testimonials) */}
+      <section
+        id="why-us"
+        ref={(el) => (sectionRefs.current['why-us'] = el)}
+        className={`py-24 px-4 transition-all duration-1000 ${visibleSections.has('why-us') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
       >
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-              What Our <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Users Say</span>
+              Built <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Different</span>
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto">
-              Real stories from real people who found support through MindBridge.
+              MindBridge isn't just another wellness app. Here's what genuinely sets it apart.
             </p>
           </div>
 
-          {/* Testimonial Carousel */}
-          <div className="relative max-w-4xl mx-auto">
-            <div className="overflow-hidden">
-              <div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentTestimonial * 100}%)` }}
+          <div className="grid md:grid-cols-3 gap-8">
+            {differentiators.map(({ icon: Icon, title, description, color }, index) => (
+              <div
+                key={index}
+                className="group p-8 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 hover:-translate-y-1 transition-all duration-300"
               >
-                {testimonials.map((testimonial) => (
-                  <div key={testimonial.id} className="w-full flex-shrink-0 px-4">
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                        {testimonial.avatar}
-                      </div>
-                      <div className="flex justify-center gap-1 mb-4">
-                        {[...Array(testimonial.rating)].map((_, i) => (
-                          <Star key={i} size={18} className="text-yellow-400 fill-yellow-400" />
-                        ))}
-                      </div>
-                      <p className="text-lg text-gray-300 mb-6 italic">"{testimonial.content}"</p>
-                      <div>
-                        <div className="font-semibold">{testimonial.name}</div>
-                        <div className="text-sm text-gray-400">{testimonial.role}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                  <Icon size={28} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
+                <p className="text-gray-400 leading-relaxed">{description}</p>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Navigation Arrows */}
-            <button 
-              onClick={() => setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+          <div className="mt-12 text-center">
+            <Link
+              to="/about"
+              className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
             >
-              <ChevronLeft size={20} />
-            </button>
-            <button 
-              onClick={() => setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-            >
-              <ChevronRight size={20} />
-            </button>
-
-            {/* Dots Navigation */}
-            <div className="flex justify-center gap-2 mt-8">
-              {testimonials.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentTestimonial(index)}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentTestimonial 
-                      ? 'w-8 bg-gradient-to-r from-cyan-500 to-purple-500' 
-                      : 'bg-white/20 hover:bg-white/40'
-                  }`}
-                />
-              ))}
-            </div>
+              Read our full story
+              <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Professional CTA Section */}
-      <section 
+      <section
         id="professionals"
         ref={(el) => (sectionRefs.current['professionals'] = el)}
         className={`py-24 px-4 transition-all duration-1000 ${visibleSections.has('professionals') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
@@ -435,7 +388,7 @@ export default function LandingPage() {
             {/* Background */}
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600/30 to-cyan-600/30" />
             <div className="absolute inset-0 bg-[#0a0f1a]/60" />
-            
+
             <div className="relative z-10 py-16 px-8 md:px-16 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="max-w-xl">
                 <div className="flex items-center gap-2 mb-4">
@@ -446,7 +399,7 @@ export default function LandingPage() {
                   Expand Your Practice with MindBridge
                 </h2>
                 <p className="text-gray-300 mb-6">
-                  Join our network of licensed therapists and counselors. Reach more clients, 
+                  Join our network of licensed therapists and counselors. Reach more clients,
                   manage appointments seamlessly, and make a difference in people's lives.
                 </p>
                 <ul className="space-y-3 mb-8">
@@ -456,7 +409,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-3 text-gray-300">
                     <CheckCircle2 size={20} className="text-green-400" />
-                    Secure, HIPAA-compliant platform
+                    Secure, privacy-first platform
                   </li>
                   <li className="flex items-center gap-3 text-gray-300">
                     <CheckCircle2 size={20} className="text-green-400" />
@@ -464,15 +417,15 @@ export default function LandingPage() {
                   </li>
                 </ul>
               </div>
-              
+
               <div className="flex flex-col gap-4">
-                <Link 
+                <Link
                   to="/register?role=professional"
                   className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full font-semibold text-lg hover:shadow-xl hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105 text-center"
                 >
                   Join as Professional
                 </Link>
-                <Link 
+                <Link
                   to="/professionals"
                   className="px-8 py-4 bg-white/10 border border-white/20 rounded-full font-semibold text-lg hover:bg-white/20 transition-all duration-300 text-center"
                 >
@@ -492,10 +445,10 @@ export default function LandingPage() {
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent"> Wellness Journey?</span>
           </h2>
           <p className="text-xl text-gray-400 mb-10">
-            Join thousands of others who have found support, understanding, and healing through MindBridge.
+            Start your mental wellness journey today — connect with AI support, a growing community, and licensed professionals.
           </p>
-          <Link 
-            to="/register" 
+          <Link
+            to="/register"
             className="inline-flex items-center gap-2 px-10 py-5 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full font-semibold text-xl hover:shadow-xl hover:shadow-cyan-500/25 transition-all duration-300 hover:scale-105"
           >
             Get Started Free
@@ -525,7 +478,7 @@ export default function LandingPage() {
                 </a>
               </div>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Platform</h4>
               <ul className="space-y-3 text-gray-400 text-sm">
@@ -535,35 +488,30 @@ export default function LandingPage() {
                 <li><Link to="/professionals" className="hover:text-white transition-colors">Find Professionals</Link></li>
               </ul>
             </div>
-            
+
             <div>
-              <h4 className="font-semibold mb-4">Resources</h4>
+              <h4 className="font-semibold mb-4">Company</h4>
               <ul className="space-y-3 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
+                <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Community Guidelines</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Crisis Resources</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-3 text-gray-400 text-sm">
                 <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">HIPAA Compliance</a></li>
               </ul>
             </div>
           </div>
-          
-          <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} MindBridge. All rights reserved.
-            </p>
-            <p className="text-gray-500 text-xs flex items-center gap-2">
-              <Heart size={14} className="text-pink-400" />
-              Made with care for your mental wellness
+
+          <div className="pt-8 border-t border-white/10 text-center">
+            <p className="text-gray-500 text-sm">
+              © {new Date().getFullYear()} MindBridge · Built at The ICT University, Cameroon
             </p>
           </div>
         </div>
@@ -573,7 +521,7 @@ export default function LandingPage() {
       {isVideoModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="relative w-full max-w-4xl mx-4">
-            <button 
+            <button
               onClick={() => setIsVideoModalOpen(false)}
               className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
             >

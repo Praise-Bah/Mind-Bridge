@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, Shield, Brain, MapPin, ExternalLink } from 'lucide-react'
+import { Heart, Shield, Brain, MapPin, ExternalLink, Menu, X } from 'lucide-react'
 
 const team = [
   {
@@ -44,6 +45,8 @@ const values = [
 ]
 
 export default function AboutPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-[#0a0f1a] text-white overflow-x-hidden">
       {/* Navbar — mirrors LandingPage */}
@@ -67,8 +70,27 @@ export default function AboutPage() {
               >
                 Get Started
               </Link>
+              <button
+                className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
             </div>
           </div>
+
+          {/* Mobile dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-white/10 py-4 space-y-1 pb-4">
+              <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                Home
+              </Link>
+              <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-3 text-white font-medium hover:bg-white/5 rounded-lg transition-colors">
+                About
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -140,11 +162,11 @@ export default function AboutPage() {
                 className="flex-1 max-w-lg bg-white/5 border border-white/10 rounded-2xl shadow-2xl overflow-hidden group hover:border-cyan-500/30 transition-all duration-300"
               >
                 {/* Photo */}
-                <div className="relative h-72 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 overflow-hidden">
+                <div className="relative h-80 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 overflow-hidden">
                   <img
                     src={member.photo}
                     alt={member.name}
-                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => {
                       const el = e.currentTarget
                       el.style.display = 'none'
