@@ -303,6 +303,14 @@ class ReactionToggleView(APIView):
         if not created:
             reaction.delete()
             return Response({'status': 'removed'})
+        if str(post.author.user_id) != str(request.user.user_id):
+            _publish_notification(
+                user_id=post.author.user_id,
+                notification_type='reaction',
+                title=f'{snapshot.username} reacted to your post',
+                message=f'"{post.content[:80]}"' if post.content else 'your post',
+                data={'post_id': str(post.id), 'reaction_type': reaction_type},
+            )
         return Response({'status': 'added'}, status=status.HTTP_201_CREATED)
 
 

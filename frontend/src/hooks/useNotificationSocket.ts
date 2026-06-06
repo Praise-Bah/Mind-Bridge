@@ -1,65 +1,101 @@
 import { useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@/store'
-import { addNotification, setNotifications, setUnreadCount } from '@/store/slices/notificationSlice'
+import {
+  addNotification,
+  setNotifications,
+  setUnreadCount,
+  setConnected,
+} from '@/store/slices/notificationSlice'
 import api from '@/services/api'
 import type { Notification } from '@/types'
 
-const POLL_INTERVAL_MS = 30_000
+const WS_BASE = (import.meta.env.VITE_WS_URL || 'ws://localhost/ws').replace(/\/$/, '')
+const RECONNECT_BASE_MS = 1_000
+const RECONNECT_MAX_MS = 30_000
 
 export default function useNotificationSocket() {
   const dispatch = useDispatch()
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth)
-  const prevCountRef = useRef<number>(0)
+  const { isAuthenticated, token } = useSelector((state: RootState) => state.auth)
+  const wsRef = useRef<WebSocket | null>(null)
+  const reconnectAttemptRef = useRef(0)
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const intentionalCloseRef = useRef(false)
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || !token) return
 
-    // Fetch full notification list once on mount so the store is populated
     async function fetchAll() {
       try {
         const res = await api.get('/notifications/')
         const notifications: Notification[] = res.data.results ?? res.data ?? []
         dispatch(setNotifications(notifications))
-        prevCountRef.current = notifications.filter(n => !n.is_read).length
       } catch {
-        // ignore — user may not be authenticated yet
+        // ignore — may not be authenticated yet
       }
     }
 
-    // Poll only the unread count on every tick, add new notifications incrementally
-    async function pollUnread() {
-      try {
-        const countRes = await api.get('/notifications/unread-count/')
-        const newCount: number = countRes.data.unread_count ?? 0
+    function connect() {
+      if (
+        wsRef.current?.readyState === WebSocket.OPEN ||
+        wsRef.current?.readyState === WebSocket.CONNECTING
+      ) return
 
-        if (newCount > prevCountRef.current) {
-          // Fetch the full list to pick up new notifications
-          const res = await api.get('/notifications/')
-          const notifications: Notification[] = res.data.results ?? res.data ?? []
-          dispatch(setNotifications(notifications))
-          // Surface newly arrived ones as toast-like state updates
-          const unread = notifications.filter(n => !n.is_read)
-          const prevIds = new Set(
-            notifications
-              .filter(n => n.is_read)
-              .map(n => n.id)
-          )
-          unread
-            .filter(n => !prevIds.has(n.id))
-            .forEach(n => dispatch(addNotification(n)))
-        } else {
-          dispatch(setUnreadCount(newCount))
+      const ws = new WebSocket(`${WS_BASE}/notifications/?token=${token}`)
+      wsRef.current = ws
+
+      ws.onopen = () => {
+        reconnectAttemptRef.current = 0
+        dispatch(setConnected(true))
+      }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.notification) {
+            dispatch(addNotification(data.notification))
+          } else if (data.unread_count !== undefined) {
+            dispatch(setUnreadCount(data.unread_count))
+          }
+        } catch {
+          // ignore malformed messages
         }
+      }
 
-        prevCountRef.current = newCount
-      } catch {
-        // ignore network errors
+      ws.onclose = () => {
+        dispatch(setConnected(false))
+        if (!intentionalCloseRef.current) {
+          scheduleReconnect()
+        }
+      }
+
+      ws.onerror = () => {
+        ws.close()
       }
     }
 
+    function scheduleReconnect() {
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
+      const delay = Math.min(
+        RECONNECT_BASE_MS * 2 ** reconnectAttemptRef.current,
+        RECONNECT_MAX_MS,
+      )
+      reconnectAttemptRef.current++
+      reconnectTimerRef.current = setTimeout(connect, delay)
+    }
+
+    intentionalCloseRef.current = false
     fetchAll()
-    const intervalId = setInterval(pollUnread, POLL_INTERVAL_MS)
-    return () => clearInterval(intervalId)
-  }, [isAuthenticated, dispatch])
+    connect()
+
+    return () => {
+      intentionalCloseRef.current = true
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current)
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      dispatch(setConnected(false))
+    }
+  }, [isAuthenticated, token, dispatch])
 }
