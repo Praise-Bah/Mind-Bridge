@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,6 +8,8 @@ from django.conf import settings
 from django.utils import timezone
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+
+logger = logging.getLogger(__name__)
 
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, UserProfileUpdateSerializer,
@@ -42,7 +45,10 @@ class RegisterView(generics.CreateAPIView):
     def perform_create(self, serializer):
         user = serializer.save()
         verification = create_verification_code(user)
-        send_verification_email(user, verification.code)
+        try:
+            send_verification_email(user, verification.code)
+        except Exception as e:
+            logger.error('Failed to send verification email to %s: %s', user.email, e)
         return user
 
 
