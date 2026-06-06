@@ -48,20 +48,15 @@ export default function JournalPage() {
   }
 
   const handleSaveEntry = async (entryData: Partial<JournalEntry>) => {
-    try {
-      if (editingEntry) {
-        await journalService.updateEntry(editingEntry.id, entryData)
-        setEntries(entries.map(e => e.id === editingEntry.id ? { ...e, ...entryData } : e))
-      } else {
-        const newEntry = await journalService.createEntry(entryData)
-        setEntries([newEntry, ...entries])
-      }
-      
-      setEditingEntry(null)
-      setShowModal(false)
-    } catch (error) {
-      console.error('Error saving entry:', error)
+    if (editingEntry) {
+      await journalService.updateEntry(editingEntry.id, entryData)
+      setEntries(prev => prev.map(e => e.id === editingEntry!.id ? { ...e, ...entryData } : e))
+    } else {
+      const newEntry = await journalService.createEntry(entryData)
+      setEntries(prev => [newEntry, ...prev])
     }
+    setEditingEntry(null)
+    setShowModal(false)
   }
 
   const handleDeleteEntry = async (entry: JournalEntry) => {

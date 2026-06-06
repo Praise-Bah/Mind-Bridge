@@ -395,17 +395,23 @@ function AvailabilityTab() {
     setToggling(key)
     const existing = findSlot(weekday, hour)
     const endHour = String(parseInt(hour) + 1).padStart(2, '0') + ':00'
-    if (existing) {
-      if (existing.is_available) {
-        await proDashboardService.blockSlot({ weekday, start_time: hour, end_time: endHour })
+    try {
+      if (existing) {
+        if (existing.is_available) {
+          await proDashboardService.blockSlot({ weekday, start_time: hour, end_time: endHour })
+        } else {
+          await proDashboardService.deleteSlot(existing.id)
+        }
       } else {
-        await proDashboardService.deleteSlot(existing.id)
+        await proDashboardService.createSlot({ weekday, start_time: hour, end_time: endHour, is_available: true })
       }
-    } else {
-      await proDashboardService.createSlot({ weekday, start_time: hour, end_time: endHour, is_available: true })
+      load()
+    } catch {
+      // slot update failed — reload to restore correct state
+      load()
+    } finally {
+      setToggling(null)
     }
-    load()
-    setToggling(null)
   }
 
   if (loading) return <Spinner />
@@ -671,15 +677,20 @@ function ProfileEditorTab() {
 
   async function handleSave() {
     setSaving(true)
-    await proDashboardService.updateProfile({
-      ...form,
-      years_of_experience: parseInt(form.years_of_experience) || 0,
-      session_rate: parseFloat(form.session_rate) || 0,
-      languages: form.languages.split(',').map(l => l.trim()).filter(Boolean),
-    })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
-    setSaving(false)
+    try {
+      await proDashboardService.updateProfile({
+        ...form,
+        years_of_experience: parseInt(form.years_of_experience) || 0,
+        session_rate: parseFloat(form.session_rate) || 0,
+        languages: form.languages.split(',').map(l => l.trim()).filter(Boolean),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch {
+      // error is visible in console; button re-enables so user can retry
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (loading) return <Spinner />

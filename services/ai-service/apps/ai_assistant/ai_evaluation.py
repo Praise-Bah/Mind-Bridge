@@ -106,7 +106,8 @@ class GroupApprovalAIService:
                 logger.error('Error parsing result from %s: %s', model_config['name'], exc)
 
         if not valid_scores:
-            return [], 0, 'Unable to complete evaluation due to technical issues.'
+            # All models failed/timed out — send to manual review rather than auto-rejecting
+            return [], 60, 'Automatic evaluation could not complete. Manual review required.'
 
         total_weight = sum(s['weight'] for s in valid_scores)
         final_score = int(sum(s['score'] * s['weight'] for s in valid_scores) / total_weight) if total_weight else 0
@@ -117,7 +118,14 @@ class GroupApprovalAIService:
         try:
             from .services import AIService
             service = AIService(model_key)
-            return await asyncio.to_thread(service.get_response, [], prompt)
+            result = await asyncio.wait_for(
+                asyncio.to_thread(service.get_response, [], prompt),
+                timeout=25.0,
+            )
+            return result
+        except asyncio.TimeoutError:
+            logger.warning('Model %s timed out after 25s', model_config['name'])
+            return '{"overall_score": 0, "reasoning": "Model timed out"}'
         except Exception as exc:
             logger.error('Error with %s: %s', model_config['name'], exc)
             return '{"overall_score": 0, "reasoning": "Error during evaluation"}'

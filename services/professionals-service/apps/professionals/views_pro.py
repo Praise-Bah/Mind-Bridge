@@ -80,7 +80,7 @@ class TodaySessionsView(generics.ListAPIView):
     serializer_class = ProBookingSerializer
 
     def get_queryset(self):
-        profile = _get_profile(self.request)
+        profile = _get_or_create_profile(self.request)
         return Booking.objects.filter(
             professional=profile,
             scheduled_date=datetime.date.today(),
@@ -92,7 +92,7 @@ class PatientListView(APIView):
     permission_classes = [IsProfessional]
 
     def get(self, request):
-        profile = _get_profile(request)
+        profile = _get_or_create_profile(request)
         bookings = Booking.objects.filter(
             professional=profile, is_deleted=False
         ).order_by('user_id', '-scheduled_date')
@@ -117,17 +117,31 @@ class PatientListView(APIView):
         return Response(result)
 
 
+def _get_or_create_profile(request) -> ProfessionalProfile:
+    profile, _ = ProfessionalProfile.objects.get_or_create(
+        user_id=str(request.user.user_id),
+        defaults={
+            'title': '',
+            'bio': '',
+            'credentials': '',
+            'years_of_experience': 0,
+            'status': 'approved',
+        },
+    )
+    return profile
+
+
 class ProAvailabilityListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsProfessional]
     serializer_class = AvailabilitySerializer
 
     def get_queryset(self):
         return Availability.objects.filter(
-            professional=_get_profile(self.request), is_deleted=False,
+            professional=_get_or_create_profile(self.request), is_deleted=False,
         ).order_by('weekday', 'start_time')
 
     def perform_create(self, serializer):
-        serializer.save(professional=_get_profile(self.request))
+        serializer.save(professional=_get_or_create_profile(self.request))
 
 
 class ProAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -136,7 +150,7 @@ class ProAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Availability.objects.filter(
-            professional=_get_profile(self.request), is_deleted=False,
+            professional=_get_or_create_profile(self.request), is_deleted=False,
         )
 
     def perform_destroy(self, instance):
@@ -151,7 +165,7 @@ class BlockTimeSlotView(APIView):
         weekday = request.data.get('weekday')
         start_time = request.data.get('start_time')
         end_time = request.data.get('end_time')
-        profile = _get_profile(request)
+        profile = _get_or_create_profile(request)
         slot, _ = Availability.objects.get_or_create(
             professional=profile, weekday=weekday, start_time=start_time,
             defaults={'end_time': end_time, 'is_available': False},
@@ -165,7 +179,7 @@ class EarningsView(APIView):
     permission_classes = [IsProfessional]
 
     def get(self, request):
-        profile = _get_profile(request)
+        profile = _get_or_create_profile(request)
         now = datetime.date.today()
         month_start = now.replace(day=1)
 
@@ -199,7 +213,7 @@ class RequestPayoutView(APIView):
     permission_classes = [IsProfessional]
 
     def post(self, request):
-        profile = _get_profile(request)
+        profile = _get_or_create_profile(request)
         profile.payout_requested = True
         profile.save(update_fields=['payout_requested'])
         return Response({'status': 'requested', 'payout_requested': True})
@@ -211,7 +225,7 @@ class SessionNoteListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         qs = SessionNote.objects.filter(
-            professional=_get_profile(self.request), is_deleted=False,
+            professional=_get_or_create_profile(self.request), is_deleted=False,
         )
         patient_id = self.request.query_params.get('patient')
         if patient_id:
@@ -219,7 +233,7 @@ class SessionNoteListCreateView(generics.ListCreateAPIView):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(professional=_get_profile(self.request))
+        serializer.save(professional=_get_or_create_profile(self.request))
 
 
 class SessionNoteDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -228,7 +242,7 @@ class SessionNoteDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return SessionNote.objects.filter(
-            professional=_get_profile(self.request), is_deleted=False,
+            professional=_get_or_create_profile(self.request), is_deleted=False,
         )
 
     def perform_destroy(self, instance):
@@ -239,13 +253,26 @@ class SessionNoteDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ProProfileView(APIView):
     permission_classes = [IsProfessional]
 
+    def _get_or_create(self, request) -> ProfessionalProfile:
+        profile, _ = ProfessionalProfile.objects.get_or_create(
+            user_id=str(request.user.user_id),
+            defaults={
+                'title': '',
+                'bio': '',
+                'credentials': '',
+                'years_of_experience': 0,
+                'status': 'approved',
+            },
+        )
+        return profile
+
     def get(self, request):
-        profile = _get_profile(request)
+        profile = self._get_or_create(request)
         serializer = ProfessionalProfileSerializer(profile, context={'request': request})
         return Response(serializer.data)
 
     def patch(self, request):
-        profile = _get_profile(request)
+        profile = self._get_or_create(request)
         data = request.data
         updatable = ['title', 'bio', 'credentials', 'years_of_experience',
                      'languages', 'session_rate', 'gender']
@@ -266,7 +293,7 @@ class IncomingBookingsView(generics.ListAPIView):
     serializer_class = ProBookingSerializer
 
     def get_queryset(self):
-        profile = _get_profile(self.request)
+        profile = _get_or_create_profile(self.request)
         qs = Booking.objects.filter(professional=profile, is_deleted=False).order_by('scheduled_date', 'scheduled_time')
         status_filter = self.request.query_params.get('status')
         if status_filter:
@@ -280,7 +307,7 @@ class BookingActionView(APIView):
     def post(self, request, pk, action):
         try:
             booking = Booking.objects.get(
-                pk=pk, professional=_get_profile(request), is_deleted=False
+                pk=pk, professional=_get_or_create_profile(request), is_deleted=False
             )
         except Booking.DoesNotExist:
             return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
