@@ -174,7 +174,8 @@ class InternalAdminApproveProfessionalView(APIView):
             application = ProfessionalApplication.objects.select_related('user').get(pk=pk)
         except ProfessionalApplication.DoesNotExist:
             return Response({'error': 'not found'}, status=404)
-        application.approve(request.user if hasattr(request, 'user') and request.user else None)
+        admin_user = request.user if (hasattr(request, 'user') and getattr(request.user, 'is_authenticated', False)) else None
+        application.approve(admin_user)
         _publish('professional.application_approved', {
             'user_id': str(application.user.id),
             'email': application.user.email,
@@ -200,7 +201,8 @@ class InternalAdminRejectProfessionalView(APIView):
             application = ProfessionalApplication.objects.select_related('user').get(pk=pk)
         except ProfessionalApplication.DoesNotExist:
             return Response({'error': 'not found'}, status=404)
-        application.reject(request.user if hasattr(request, 'user') and request.user else None, reason)
+        admin_user = request.user if (hasattr(request, 'user') and getattr(request.user, 'is_authenticated', False)) else None
+        application.reject(admin_user, reason)
         _publish('notification.create', {
             'user_id': str(application.user.id),
             'notification_type': 'professional',
