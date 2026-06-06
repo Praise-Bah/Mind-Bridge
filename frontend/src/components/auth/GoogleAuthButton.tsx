@@ -20,8 +20,7 @@ export default function GoogleAuthButton({
   const buttonRef = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
 
-  // @ts-expect-error - Vite env vars
-  const clientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID || ''
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
   useEffect(() => {
     if (!clientId) {
