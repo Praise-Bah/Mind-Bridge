@@ -4,7 +4,7 @@ import { RootState } from '@/store'
 import { toggleSidebar } from '@/store/slices/uiSlice'
 import {
   LayoutDashboard, Users, MessageCircle, Video, Brain,
-  BookOpen, User, Settings, Calendar, Menu, Bell, ShieldCheck, Briefcase
+  BookOpen, User, Settings, Calendar, Menu, Bell, ShieldCheck, Briefcase, Info
 } from 'lucide-react'
 
 const navItems = [
@@ -18,6 +18,7 @@ const navItems = [
   { path: '/journal', icon: BookOpen, label: 'Journal' },
   { path: '/notifications', icon: Bell, label: 'Notifications', badge: true },
   { path: '/profile', icon: User, label: 'Profile' },
+  { path: '/about', icon: Info, label: 'About' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ]
 

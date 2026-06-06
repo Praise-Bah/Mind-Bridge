@@ -8,6 +8,7 @@ import AuthLayout from './components/layout/AuthLayout'
 import ThemeProvider from './providers/ThemeProvider'
 
 const LandingPage = lazy(() => import('./pages/LandingPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
 const VerifyEmailPage = lazy(() => import('./pages/auth/VerifyEmailPage'))
@@ -69,6 +70,7 @@ function App() {
 
           {/* Landing Page - Public */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<AboutPage />} />
 
           {/* Public Routes */}
           <Route element={<AuthLayout />}>

@@ -178,6 +178,9 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('professionals')} className="text-gray-300 hover:text-white transition-colors">
                 For Professionals
               </button>
+              <Link to="/about" className="text-gray-300 hover:text-white transition-colors">
+                About
+              </Link>
             </div>
 
             <div className="flex items-center gap-3">
