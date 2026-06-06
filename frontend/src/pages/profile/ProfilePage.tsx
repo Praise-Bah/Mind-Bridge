@@ -62,7 +62,7 @@ export default function ProfilePage() {
     profileService.getGoals().then(goalsData => {
       console.log('Goals data:', goalsData)
       setGoals(goalsData)
-    }).catch(goalsError => {
+    }).catch(_ => {
       console.log('Goals API not ready, using empty array')
       setGoals([])
     })

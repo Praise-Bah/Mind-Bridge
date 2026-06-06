@@ -48,9 +48,9 @@ export default function ShareVideoModal({ video, onClose }: ShareVideoModalProps
     try {
       const group = groups.find((g) => g.id === selectedGroup)
       if (group) {
-        await communityService.createPost(group.slug, {
-          content: `📹 Check out this video: **${video.title}**\n\n${videoUrl}`,
-        })
+        const fd = new FormData()
+        fd.append('content', `📹 Check out this video: **${video.title}**\n\n${videoUrl}`)
+        await communityService.createPost(group.slug, fd)
         setShared(true)
         setTimeout(onClose, 1500)
       }
