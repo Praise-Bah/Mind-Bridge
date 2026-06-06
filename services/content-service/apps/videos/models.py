@@ -20,7 +20,7 @@ class Video(BaseModel):
     source_type = models.CharField(max_length=10, choices=SOURCE_TYPES)
     youtube_id = models.CharField(max_length=20, blank=True)
     video_file = models.FileField(upload_to='videos/', blank=True, null=True)
-    thumbnail = models.ImageField(upload_to='video_thumbnails/', blank=True, null=True)
+    thumbnail = models.URLField(blank=True, default='')
     duration_seconds = models.PositiveIntegerField(default=0)
     category = models.ForeignKey(VideoCategory, on_delete=models.SET_NULL, null=True, related_name='videos')
     mood_tags = models.JSONField(default=list)

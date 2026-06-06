@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSelector } from 'react-redux'
 import { Phone, Video, MoreVertical, AlertTriangle, Calendar, Loader2 } from 'lucide-react'
 import type { Conversation, Message } from '@/types'
+import type { RootState } from '@/store'
 import MessageBubble from './MessageBubble'
 import MessageInput from './MessageInput'
 import { chatService } from '@/services/chatService'
+
+const WS_BASE = (import.meta.env.VITE_WS_URL || 'ws://localhost/ws').replace(/\/$/, '')
 
 interface Props {
   conversation: Conversation
@@ -16,14 +20,52 @@ export default function ChatWindow({ conversation, currentUserId, onBookSession 
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
-  const [isTyping, _setIsTyping] = useState(false)
+  const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { token } = useSelector((state: RootState) => state.auth)
 
   useEffect(() => {
     loadMessages()
-    // Mark messages as read when conversation is opened
     chatService.markAsRead(conversation.id).catch(() => {})
   }, [conversation.id])
+
+  // Real-time WebSocket connection per conversation
+  useEffect(() => {
+    if (!token) return
+
+    const ws = new WebSocket(`${WS_BASE}/chat/${conversation.id}/?token=${token}`)
+    wsRef.current = ws
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.type === 'chat_message') {
+          const msg: Message = data.message
+          // Skip if already in list — REST response adds the sender's own message
+          setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
+        } else if (data.type === 'typing') {
+          if (data.user_id !== currentUserId) {
+            setIsTyping(data.is_typing)
+            if (data.is_typing) {
+              if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+              typingTimerRef.current = setTimeout(() => setIsTyping(false), 4_000)
+            }
+          }
+        }
+      } catch {
+        // ignore malformed frames
+      }
+    }
+
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+      ws.close()
+      wsRef.current = null
+    }
+  }, [conversation.id, token, currentUserId])
 
   useEffect(() => {
     scrollToBottom()
@@ -50,7 +92,8 @@ export default function ChatWindow({ conversation, currentUserId, onBookSession 
     setSending(true)
     try {
       const newMessage = await chatService.sendMessage(conversation.id, content)
-      setMessages(prev => [...prev, newMessage])
+      // Skip if WS broadcast already added it
+      setMessages(prev => prev.some(m => m.id === newMessage.id) ? prev : [...prev, newMessage])
     } catch (error) {
       console.error('Failed to send message:', error)
     } finally {
@@ -59,7 +102,9 @@ export default function ChatWindow({ conversation, currentUserId, onBookSession 
   }
 
   const handleTyping = () => {
-    // Could implement typing indicator via WebSocket here
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'typing', is_typing: true }))
+    }
   }
 
   // Get other participant info (for 1:1 chats)

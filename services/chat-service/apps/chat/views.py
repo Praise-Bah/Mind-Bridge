@@ -111,7 +111,36 @@ class MessageListCreateView(generics.ListCreateAPIView):
         message = serializer.save(sender=sender, conversation=conversation)
         conversation.last_message_at = timezone.now()
         conversation.save(update_fields=['last_message_at'])
+        self._broadcast(message, sender)
         return message
+
+    def _broadcast(self, message, sender):
+        """Push the new message to all WebSocket participants of this conversation."""
+        try:
+            from channels.layers import get_channel_layer
+            from asgiref.sync import async_to_sync
+            channel_layer = get_channel_layer()
+            if not channel_layer:
+                return
+            payload = {
+                'id': str(message.id),
+                'conversation': str(message.conversation_id),
+                'sender': str(sender.user_id),
+                'sender_name': sender.username,
+                'sender_avatar': sender.avatar_url,
+                'content': message.content,
+                'message_type': message.message_type,
+                'attachment': None,
+                'is_read': message.is_read,
+                'read_at': None,
+                'created_at': message.created_at.isoformat(),
+            }
+            async_to_sync(channel_layer.group_send)(
+                f'chat_{message.conversation_id}',
+                {'type': 'chat_message', 'message': payload},
+            )
+        except Exception:
+            pass
 
 
 class MarkMessagesReadView(APIView):

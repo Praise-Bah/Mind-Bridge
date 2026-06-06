@@ -37,8 +37,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 {
                     'type': 'chat_message',
                     'message': message,
-                    'sender_id': self.user.user_id,
-                    'sender_name': self.user.username,
                 }
             )
         elif message_type == 'typing':
@@ -46,7 +44,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 self.room_group_name,
                 {
                     'type': 'typing_indicator',
-                    'user_id': self.user.user_id,
+                    'user_id': str(self.user.user_id),
                     'is_typing': content.get('is_typing', False),
                 }
             )
@@ -55,8 +53,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({
             'type': 'chat_message',
             'message': event['message'],
-            'sender_id': event['sender_id'],
-            'sender_name': event['sender_name'],
         })
 
     async def typing_indicator(self, event):
@@ -91,8 +87,18 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         )
         conversation.last_message_at = timezone.now()
         conversation.save(update_fields=['last_message_at'])
+        # Return a dict matching MessageSerializer shape so the frontend can
+        # use message.sender === currentUserId for the isOwn check.
         return {
             'id': str(message.id),
+            'conversation': str(conversation.id),
+            'sender': str(sender.user_id),
+            'sender_name': sender.username,
+            'sender_avatar': sender.avatar_url,
             'content': message.content,
+            'message_type': message.message_type,
+            'attachment': None,
+            'is_read': message.is_read,
+            'read_at': None,
             'created_at': message.created_at.isoformat(),
         }

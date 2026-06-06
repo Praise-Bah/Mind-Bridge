@@ -12,6 +12,9 @@ class ParticipantSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
+    # Use sender.user_id (auth-service UUID) not the UserSnapshot PK so the
+    # frontend isOwn check (message.sender === currentUserId) works correctly.
+    sender = serializers.UUIDField(source='sender.user_id', read_only=True)
     sender_name = serializers.CharField(source='sender.username', read_only=True)
     sender_avatar = serializers.CharField(source='sender.avatar_url', read_only=True)
 

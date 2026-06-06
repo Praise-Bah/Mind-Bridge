@@ -93,6 +93,48 @@ class ProfessionalAvailabilityView(generics.ListAPIView):
         ).order_by('weekday', 'start_time')
 
 
+class MyAvailabilityListCreateView(generics.ListCreateAPIView):
+    """Professionals manage their own availability slots."""
+    serializer_class = AvailabilitySerializer
+
+    def _get_profile(self):
+        try:
+            return ProfessionalProfile.objects.get(
+                user_id=str(self.request.user.user_id), is_deleted=False
+            )
+        except ProfessionalProfile.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound('No professional profile found for this account.')
+
+    def get_queryset(self):
+        profile = self._get_profile()
+        return Availability.objects.filter(
+            professional=profile, is_deleted=False
+        ).order_by('weekday', 'start_time')
+
+    def perform_create(self, serializer):
+        profile = self._get_profile()
+        serializer.save(professional=profile)
+
+
+class MyAvailabilityDetailView(generics.UpdateDestroyAPIView):
+    """Update or delete a single availability slot owned by the professional."""
+    serializer_class = AvailabilitySerializer
+
+    def get_queryset(self):
+        try:
+            profile = ProfessionalProfile.objects.get(
+                user_id=str(self.request.user.user_id), is_deleted=False
+            )
+        except ProfessionalProfile.DoesNotExist:
+            return Availability.objects.none()
+        return Availability.objects.filter(professional=profile, is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
+
+
 class BookingListCreateView(generics.ListCreateAPIView):
     serializer_class = BookingSerializer
 
