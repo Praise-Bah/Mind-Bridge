@@ -159,42 +159,45 @@ export default function AboutPage() {
             {team.map((member) => (
               <div
                 key={member.name}
-                className="flex-1 max-w-lg bg-white/5 border border-white/10 rounded-2xl shadow-2xl overflow-hidden group hover:border-cyan-500/30 transition-all duration-300"
+                className="flex-1 max-w-lg relative rounded-2xl overflow-hidden shadow-2xl group cursor-default"
+                style={{ height: '520px' }}
               >
-                {/* Photo */}
-                <div className="relative h-80 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 overflow-hidden">
-                  <img
-                    src={member.photo}
-                    alt={member.name}
-                    className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      const el = e.currentTarget
-                      el.style.display = 'none'
-                      const parent = el.parentElement
-                      if (parent) {
-                        const initials = member.name.split(' ').map(w => w[0]).slice(0, 2).join('')
-                        const div = document.createElement('div')
-                        div.className = 'w-full h-full flex items-center justify-center text-6xl font-bold text-white/30'
-                        div.textContent = initials
-                        parent.appendChild(div)
-                      }
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f1a]/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="text-white font-bold text-xl leading-tight">{member.name}</p>
-                    <p className="text-cyan-400 text-sm font-medium mt-0.5">{member.role}</p>
-                  </div>
+                {/* Full photo — fills entire card */}
+                <img
+                  src={member.photo}
+                  alt={member.name}
+                  className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                  onError={(e) => {
+                    const el = e.currentTarget
+                    el.style.display = 'none'
+                    const parent = el.parentElement
+                    if (parent) {
+                      const initials = member.name.split(' ').map((w: string) => w[0]).slice(0, 2).join('')
+                      parent.style.background = 'linear-gradient(135deg,#00BFFF22,#7C5CBF33)'
+                      const div = document.createElement('div')
+                      div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:5rem;font-weight:700;color:rgba(255,255,255,0.2)'
+                      div.textContent = initials
+                      parent.appendChild(div)
+                    }
+                  }}
+                />
+
+                {/* Always-visible bottom strip: name + role */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-6 pt-16 pb-5 transition-opacity duration-300 group-hover:opacity-0">
+                  <p className="text-white font-bold text-xl leading-tight drop-shadow">{member.name}</p>
+                  <p className="text-cyan-400 text-sm font-medium mt-1 drop-shadow">{member.role}</p>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 space-y-4">
-                  <div className="flex items-center gap-1.5 text-gray-500 text-sm">
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                {/* Hover overlay: slides up from bottom, covers lower ~55% */}
+                <div className="absolute inset-x-0 bottom-0 h-[58%] bg-gradient-to-t from-[#0a0f1a] via-[#0a0f1a]/95 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out flex flex-col justify-end px-6 pb-6 pt-10">
+                  <p className="text-white font-bold text-lg leading-tight mb-0.5">{member.name}</p>
+                  <p className="text-cyan-400 text-sm font-medium mb-2">{member.role}</p>
+                  <div className="flex items-center gap-1.5 text-gray-400 text-xs mb-3">
+                    <MapPin className="w-3 h-3 flex-shrink-0" />
                     {member.location}
                   </div>
-                  <p className="text-gray-400 leading-relaxed text-sm">{member.bio}</p>
-                  <div className="flex flex-wrap gap-2 pt-2">
+                  <p className="text-gray-300 text-xs leading-relaxed mb-4 line-clamp-5">{member.bio}</p>
+                  <div className="flex flex-wrap gap-1.5">
                     {member.tags.map((tag) => (
                       <span key={tag} className={`px-2.5 py-1 rounded-full text-xs font-medium ${member.tagColor}`}>
                         {tag}
