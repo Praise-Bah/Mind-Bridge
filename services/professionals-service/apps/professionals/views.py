@@ -117,7 +117,7 @@ class MyAvailabilityListCreateView(generics.ListCreateAPIView):
         serializer.save(professional=profile)
 
 
-class MyAvailabilityDetailView(generics.UpdateDestroyAPIView):
+class MyAvailabilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     """Update or delete a single availability slot owned by the professional."""
     serializer_class = AvailabilitySerializer
 
