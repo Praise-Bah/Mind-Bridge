@@ -96,7 +96,6 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': REDIS_CACHE_URL,
         'KEY_PREFIX': 'community',
-        'OPTIONS': {'IGNORE_EXCEPTIONS': True},
     }
 }
 

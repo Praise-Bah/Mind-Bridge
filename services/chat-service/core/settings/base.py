@@ -53,7 +53,6 @@ CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
         'LOCATION': config('REDIS_CACHE_URL', default='redis://localhost:6379/2'),
-        'OPTIONS': {'IGNORE_EXCEPTIONS': True},
         'KEY_PREFIX': 'chat',
         'TIMEOUT': 300,
     }
