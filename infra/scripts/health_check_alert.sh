@@ -71,9 +71,18 @@ for entry in "${SERVICES[@]}"; do
   prev="up"
   [ -f "$state_file" ] && prev="$(cat "$state_file")"
 
-  status_code="$(docker exec "$container" \
-    curl -s -o /dev/null -w '%{http_code}' "http://localhost:${port}/api/v1/health/" \
-    2>/dev/null || echo "000")"
+  # The slim Django images don't include curl/wget — but they always have
+  # python (it's the runtime), so use urllib instead of relying on a tool
+  # that may not be installed in the container.
+  status_code="$(docker exec "$container" python -c "
+import urllib.request
+try:
+    with urllib.request.urlopen('http://localhost:${port}/api/v1/health/', timeout=5) as r:
+        print(r.status)
+except Exception:
+    print('000')
+" 2>/dev/null || echo "000")"
+  status_code="$(echo "$status_code" | tr -d '[:space:]')"
 
   current="down"
   [ "$status_code" = "200" ] && current="up"
