@@ -412,7 +412,7 @@ services:
     build:
       context: ../..
       dockerfile: services/content-service/Dockerfile
-    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8007 --workers 4 --threads 2 --max-requests 1000 --timeout 30 --access-logfile -"
+    command: sh -c "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8007 --workers 2 --threads 2 --max-requests 1000 --timeout 30 --access-logfile -"
     environment:
       <<: *content-env
     depends_on:

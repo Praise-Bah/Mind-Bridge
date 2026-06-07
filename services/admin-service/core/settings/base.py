@@ -60,6 +60,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'apps.admin_panel.permissions.IsAdminPrincipal',
     ],
+    # admin-service has no database/user model and authenticates via its own
+    # ServiceJWTAuthentication + SimplePrincipal -- DRF's default
+    # UNAUTHENTICATED_USER ('django.contrib.auth.models.AnonymousUser') would
+    # import django.contrib.auth.models, which crashes since that app isn't
+    # (and shouldn't need to be) in INSTALLED_APPS. None makes unauthenticated
+    # requests just get request.user = None, which IsAdminPrincipal handles.
+    'UNAUTHENTICATED_USER': None,
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
