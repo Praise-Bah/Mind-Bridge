@@ -16,3 +16,4 @@ gunicorn==21.2.0
 # Shared library — installed from repo root during Docker build
 # Dev: pip install -e ../../shared/mindbridge-common
 sentry-sdk==2.18.0
+django-prometheus==2.3.1

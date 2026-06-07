@@ -7,6 +7,7 @@ class NotificationHealthView(ServiceHealthView):
 
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     path('api/v1/notifications/', include('apps.notifications.urls')),
     path('api/v1/health/', NotificationHealthView.as_view()),
 ]

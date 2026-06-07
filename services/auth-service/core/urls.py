@@ -10,6 +10,7 @@ from apps.users.views_internal_admin import (
 )
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     # Internal service-to-service — NOT routed through Nginx
     path('internal/users/snapshots/', InternalUserSnapshotView.as_view(), name='internal_user_snapshots'),
 

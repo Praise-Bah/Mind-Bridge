@@ -11,3 +11,4 @@ Pillow==10.4.0
 gunicorn==21.2.0
 python-json-logger==2.0.7
 sentry-sdk==2.18.0
+django-prometheus==2.3.1

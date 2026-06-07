@@ -11,6 +11,7 @@ class ContentHealthView(ServiceHealthView):
 
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     # Internal admin endpoints (called by admin-service only)
     path('internal/admin/videos/', InternalAdminVideoListCreateView.as_view()),
     path('internal/admin/videos/<uuid:pk>/', InternalAdminVideoDetailView.as_view()),

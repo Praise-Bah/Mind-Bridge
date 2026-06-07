@@ -14,6 +14,7 @@ class CommunityHealthView(ServiceHealthView):
 
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     # Internal admin endpoints (called by admin-service only)
     path('internal/admin/stats/', InternalAdminStatsView.as_view()),
     path('internal/admin/groups/pending/', InternalAdminPendingGroupsView.as_view()),

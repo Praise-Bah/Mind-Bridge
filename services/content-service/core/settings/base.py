@@ -17,6 +17,7 @@ init_sentry(
 )
 
 INSTALLED_APPS = [
+    'django_prometheus',
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'rest_framework',
@@ -27,8 +28,10 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'

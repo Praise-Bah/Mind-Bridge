@@ -1,0 +1,35 @@
+// Grafana Alloy config — scrapes /metrics from each MindBridge service over the
+// internal Docker network (prod-net) and forwards everything to Grafana Cloud's
+// hosted Prometheus via remote_write. Credentials are read from environment
+// variables (sys.env) so no secrets ever live in this file — same principle as
+// how SENTRY_DSN stays out of committed config and lives only in .env.prod.
+
+prometheus.scrape "mindbridge_services" {
+  targets = [
+    {"__address__" = "auth-service:8001",          "service" = "auth-service"},
+    {"__address__" = "chat-service:8002",          "service" = "chat-service"},
+    {"__address__" = "community-service:8003",     "service" = "community-service"},
+    {"__address__" = "professionals-service:8004", "service" = "professionals-service"},
+    {"__address__" = "notification-service:8005",  "service" = "notification-service"},
+    {"__address__" = "ai-service:8006",            "service" = "ai-service"},
+    {"__address__" = "content-service:8007",       "service" = "content-service"},
+    {"__address__" = "admin-service:8008",         "service" = "admin-service"},
+  ]
+
+  job_name        = "mindbridge_services"
+  metrics_path    = "/metrics"
+  scrape_interval = "30s"
+
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USERNAME")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+}

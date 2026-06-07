@@ -8,6 +8,7 @@ class ChatHealthView(ServiceHealthView):
 
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     path('internal/admin/stats/', InternalAdminStatsView.as_view()),
 
     path('api/v1/chat/', include('apps.chat.urls')),

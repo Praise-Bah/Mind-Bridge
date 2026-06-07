@@ -609,6 +609,33 @@ services:
     networks: [prod-net]
     restart: always
 
+  # Scrapes /metrics from every service over the internal network and forwards
+  # to Grafana Cloud's hosted Prometheus via remote_write. No public ports —
+  # purely internal, mirrors how Sentry only needs outbound HTTPS egress.
+  alloy:
+    image: grafana/alloy:latest
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+    volumes:
+      - ./alloy-config.alloy:/etc/alloy/config.alloy:ro
+    environment:
+      GRAFANA_CLOUD_PROMETHEUS_URL: ${GRAFANA_CLOUD_PROMETHEUS_URL:-}
+      GRAFANA_CLOUD_PROMETHEUS_USERNAME: ${GRAFANA_CLOUD_PROMETHEUS_USERNAME:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+    depends_on:
+      - auth-service
+      - chat-service
+      - community-service
+      - professionals-service
+      - notification-service
+      - ai-service
+      - content-service
+      - admin-service
+    networks: [prod-net]
+    restart: always
+    deploy:
+      resources:
+        limits: {cpus: '0.5', memory: 256M}
+
 volumes:
   redis_data:
   postgres_auth_data:

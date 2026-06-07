@@ -8,6 +8,7 @@ class ProfessionalsHealthView(ServiceHealthView):
 
 
 urlpatterns = [
+    path('', include('django_prometheus.urls')),
     path('internal/admin/stats/', InternalAdminStatsView.as_view()),
 
     path('api/v1/professionals/', include('apps.professionals.urls')),
