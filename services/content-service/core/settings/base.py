@@ -9,6 +9,13 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 
+from mindbridge_common.sentry import init_sentry
+init_sentry(
+    service_name='content-service',
+    dsn=config('SENTRY_DSN', default=''),
+    environment=config('SENTRY_ENVIRONMENT', default='production'),
+)
+
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',

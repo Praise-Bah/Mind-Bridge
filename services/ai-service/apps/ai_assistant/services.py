@@ -42,6 +42,8 @@ class AIService:
         self.client = openai.OpenAI(
             api_key=getattr(settings, 'OPENROUTER_API_KEY', ''),
             base_url='https://openrouter.ai/api/v1',
+            timeout=60,
+            max_retries=1,
         )
         if model_key and hasattr(settings, 'OPENROUTER_MODELS'):
             models = getattr(settings, 'OPENROUTER_MODELS', {})

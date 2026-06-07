@@ -11,6 +11,8 @@ class AIService:
         self.client = openai.OpenAI(
             api_key=getattr(settings, 'OPENROUTER_API_KEY', ''),
             base_url='https://openrouter.ai/api/v1',
+            timeout=15,
+            max_retries=1,
         )
         self.model = getattr(settings, 'OPENROUTER_MODEL', 'anthropic/claude-sonnet-4')
 

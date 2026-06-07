@@ -14,6 +14,13 @@ ALLOWED_HOSTS = config(
 
 AUTH_USER_MODEL = 'users.User'
 
+from mindbridge_common.sentry import init_sentry
+init_sentry(
+    service_name='auth-service',
+    dsn=config('SENTRY_DSN', default=''),
+    environment=config('SENTRY_ENVIRONMENT', default='production'),
+)
+
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',

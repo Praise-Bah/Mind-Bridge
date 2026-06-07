@@ -17,6 +17,13 @@ ALLOWED_HOSTS = config(
     cast=lambda v: [s.strip() for s in v.split(',')],
 )
 
+from mindbridge_common.sentry import init_sentry
+init_sentry(
+    service_name='ai-service',
+    dsn=config('SENTRY_DSN', default=''),
+    environment=config('SENTRY_ENVIRONMENT', default='production'),
+)
+
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.auth',
