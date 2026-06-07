@@ -126,8 +126,15 @@ export default function CreateGroupModal({ onClose, onCreated, userGroupCount }:
             onClose()
           }
         }
-      } catch (err) {
-        console.error('Error polling status:', err)
+      } catch (err: any) {
+        // Stop polling on a definitive error (e.g. group not found / not yours)
+        // instead of retrying every 3s for up to 10 minutes.
+        clearInterval(pollInterval)
+        if (err?.response?.status === 404) {
+          setError('We lost track of your group submission. Please try creating the group again.')
+        } else {
+          setError('Could not check your group review status. Please refresh and try again.')
+        }
       }
     }, 3000)
 

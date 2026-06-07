@@ -31,6 +31,7 @@ export default function JournalEntryModal({ entry, onClose, onSave, dailyPrompt 
     is_private: entry?.is_private ?? true
   })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [showTagInput, setShowTagInput] = useState(false)
   const [newTag, setNewTag] = useState('')
   const [aiSuggestion, setAiSuggestion] = useState('')
@@ -38,11 +39,14 @@ export default function JournalEntryModal({ entry, onClose, onSave, dailyPrompt 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
     setLoading(true)
-    
+
     try {
       await onSave(formData)
       onClose()
+    } catch (err: any) {
+      setError(err?.response?.data?.detail || err?.message || 'Failed to save your entry. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -89,6 +93,12 @@ export default function JournalEntryModal({ entry, onClose, onSave, dailyPrompt 
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 text-sm rounded-lg p-3">
+              {error}
+            </div>
+          )}
+
           {/* Daily Prompt */}
           {dailyPrompt && !entry && (
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700/50">

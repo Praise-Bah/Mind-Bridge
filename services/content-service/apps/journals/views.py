@@ -37,11 +37,11 @@ class JournalEntryDetailView(generics.RetrieveUpdateDestroyAPIView):
 class DailyPromptView(generics.RetrieveAPIView):
     serializer_class = JournalPromptSerializer
 
-    def get_object(self):
-        prompts = JournalPrompt.objects.filter(is_active=True, is_deleted=False)
-        if prompts.exists():
-            return random.choice(list(prompts))
-        return None
+    def get(self, request, *args, **kwargs):
+        prompts = list(JournalPrompt.objects.filter(is_active=True, is_deleted=False))
+        if not prompts:
+            return Response(None)
+        return Response(self.get_serializer(random.choice(prompts)).data)
 
 
 @api_view(['GET'])

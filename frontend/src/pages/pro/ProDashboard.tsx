@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import {
   Calendar, Users, Clock, FileText, DollarSign, User,
   MessageCircle, Play,
@@ -100,8 +101,12 @@ function TodaySessionsTab() {
   }
 
   async function startChat(patientId: string) {
-    const conv = await chatService.createConversation([patientId])
-    navigate(`/chat/${conv.id}`)
+    try {
+      const conv = await chatService.createConversation([patientId])
+      navigate(`/chat/${conv.id}`)
+    } catch {
+      toast.error('Could not start the chat. Please try again.')
+    }
   }
 
   if (loading) return <Spinner />
@@ -307,8 +312,12 @@ function PatientListTab() {
   }, [])
 
   async function message(userId: string) {
-    const conv = await chatService.createConversation([userId])
-    navigate(`/chat/${conv.id}`)
+    try {
+      const conv = await chatService.createConversation([userId])
+      navigate(`/chat/${conv.id}`)
+    } catch {
+      toast.error('Could not start the chat. Please try again.')
+    }
   }
 
   const MOOD_COLORS = ['bg-red-400', 'bg-orange-400', 'bg-amber-400', 'bg-lime-400', 'bg-green-400']
