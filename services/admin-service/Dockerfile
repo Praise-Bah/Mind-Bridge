@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
+COPY shared/mindbridge-common /shared/mindbridge-common
+RUN pip install --no-cache-dir /shared/mindbridge-common
+
 COPY services/admin-service/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
