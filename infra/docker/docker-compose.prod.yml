@@ -13,6 +13,7 @@
 
 x-auth-env: &auth-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -36,6 +37,7 @@ x-auth-env: &auth-env
 
 x-community-env: &community-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -56,6 +58,7 @@ x-community-env: &community-env
 
 x-professionals-env: &professionals-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -75,6 +78,7 @@ x-professionals-env: &professionals-env
 
 x-content-env: &content-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -94,6 +98,7 @@ x-content-env: &content-env
 
 x-ai-env: &ai-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -112,6 +117,7 @@ x-ai-env: &ai-env
 
 x-notification-env: &notification-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -131,6 +137,7 @@ x-notification-env: &notification-env
 
 x-chat-env: &chat-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -149,6 +156,7 @@ x-chat-env: &chat-env
 
 x-admin-env: &admin-env
   DJANGO_SETTINGS_MODULE: core.settings.production
+  MALLOC_ARENA_MAX: "2"
   DEBUG: "False"
   SECRET_KEY: ${AUTH_SECRET_KEY}
   ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost}
@@ -569,7 +577,7 @@ services:
     build:
       context: ../..
       dockerfile: services/admin-service/Dockerfile
-    command: gunicorn core.wsgi:application --bind 0.0.0.0:8008 --workers 2 --threads 2 --timeout 30 --access-logfile -
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8008 --workers 1 --threads 2 --max-requests 1000 --max-requests-jitter 100 --preload --timeout 30 --graceful-timeout 15 --access-logfile -
     environment:
       <<: *admin-env
     depends_on:
