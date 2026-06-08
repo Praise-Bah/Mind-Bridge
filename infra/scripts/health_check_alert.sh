@@ -35,6 +35,8 @@ ALERT_FROM="${ALERT_FROM:-noreply@mindbridge.sbs}"
 
 mkdir -p "$STATE_DIR"
 
+declare -A SERVICE_STATUS   # populated during the per-service loop, reused by the gateway canary below
+
 # name:container:port — keep in sync with infra/docker/docker-compose.prod.yml
 SERVICES=(
   "auth-service:docker-auth-service-1:8001"
@@ -75,10 +77,14 @@ for entry in "${SERVICES[@]}"; do
   # python (it's the runtime), so use urllib instead of relying on a tool
   # that may not be installed in the container.
   status_code="$(docker exec "$container" python -c "
-import urllib.request
+import urllib.request, urllib.error
 try:
     with urllib.request.urlopen('http://localhost:${port}/api/v1/health/', timeout=5) as r:
         print(r.status)
+except urllib.error.HTTPError as e:
+    # Surface the real HTTP status (e.g. 400 from an ALLOWED_HOSTS mismatch,
+    # 503 from a degraded health check) instead of masking it as 'unreachable'.
+    print(e.code)
 except Exception:
     print('000')
 " 2>/dev/null || echo "000")"
@@ -86,6 +92,7 @@ except Exception:
 
   current="down"
   [ "$status_code" = "200" ] && current="up"
+  SERVICE_STATUS["$name"]="$current"
 
   if [ "$current" != "$prev" ]; then
     if [ "$current" = "down" ]; then
@@ -105,3 +112,53 @@ Restart with:
     echo "$current" > "$state_file"
   fi
 done
+
+# ── Nginx gateway canary: detect + self-heal stale-upstream-IP 502s ──────
+# The per-service checks above intentionally bypass Nginx (see header comment).
+# But Docker assigns recreated containers new internal IPs, and Nginx caches
+# the old ones until reloaded — producing the OPPOSITE signature: backend
+# reports healthy directly, yet public traffic through Nginx gets 502s. Only
+# probe Nginx when the backend itself is confirmed healthy — otherwise a real
+# outage would look identical and trigger a pointless reload.
+gw_state_file="${STATE_DIR}/nginx_gateway.state"
+gw_prev="ok"
+[ -f "$gw_state_file" ] && gw_prev="$(cat "$gw_state_file")"
+
+gw_status="ok"
+nginx_code="200"
+if [ "${SERVICE_STATUS[auth-service]:-down}" = "up" ]; then
+  nginx_code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost/health/ || echo "000")"
+  if [ "$nginx_code" != "200" ]; then
+    docker exec docker-nginx-1 nginx -s reload >/dev/null 2>&1 || true
+    sleep 2
+    nginx_code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost/health/ || echo "000")"
+    if [ "$nginx_code" = "200" ]; then
+      gw_status="healed"
+    else
+      gw_status="broken"
+    fi
+  fi
+fi
+
+if [ "$gw_status" != "$gw_prev" ]; then
+  case "$gw_status" in
+    healed)
+      send_email "MindBridge: Nginx gateway self-healed" \
+        "Detected the stale-upstream-IP signature at $(now): auth-service responded directly, but Nginx returned HTTP ${nginx_code} for the public /health/ path (a container was likely just recreated, leaving Nginx pointed at its old internal IP).
+
+Ran 'docker exec docker-nginx-1 nginx -s reload' automatically — Nginx now returns HTTP 200. No action needed; this is just an FYI in case you want to know why a container restarted."
+      ;;
+    broken)
+      send_email "MindBridge ALERT: Nginx gateway down, auto-heal failed" \
+        "Detected the stale-upstream-IP signature at $(now) but 'nginx -s reload' did NOT fix it (still HTTP ${nginx_code}). This needs manual investigation.
+
+  docker logs docker-nginx-1 --tail 50
+  docker compose -f /opt/Mind-Bridge/infra/docker/docker-compose.prod.yml ps"
+      ;;
+    ok)
+      send_email "MindBridge: Nginx gateway recovered" \
+        "Nginx gateway is responding normally again as of $(now)."
+      ;;
+  esac
+  echo "$gw_status" > "$gw_state_file"
+fi
