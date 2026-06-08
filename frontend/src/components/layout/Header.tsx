@@ -3,8 +3,8 @@ import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { RootState } from '@/store'
 import { logout } from '@/store/slices/authSlice'
-import { Bell, LogOut, Sun, Moon } from 'lucide-react'
-import { setTheme } from '@/store/slices/uiSlice'
+import { Bell, LogOut, Sun, Moon, Menu } from 'lucide-react'
+import { setTheme, setMobileSidebarOpen } from '@/store/slices/uiSlice'
 
 export default function Header() {
   const dispatch = useDispatch()
@@ -35,9 +35,16 @@ export default function Header() {
   }
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-between px-6">
-      <div>
-        <h2 className="text-lg font-semibold">Welcome back, {user?.first_name || user?.username || 'User'}</h2>
+    <header className="h-16 border-b bg-card flex items-center justify-between px-4 sm:px-6">
+      <div className="flex items-center gap-2 min-w-0">
+        <button
+          onClick={() => dispatch(setMobileSidebarOpen(true))}
+          className="p-2 hover:bg-accent rounded-md lg:hidden -ml-2 shrink-0"
+          title="Open menu"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <h2 className="text-lg font-semibold truncate">Welcome back, {user?.first_name || user?.username || 'User'}</h2>
       </div>
       <div className="flex items-center gap-4">
         <button onClick={toggleTheme} className="p-2 hover:bg-accent rounded-full">

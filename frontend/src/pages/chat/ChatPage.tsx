@@ -45,6 +45,11 @@ export default function ChatPage() {
     navigate(`/chat/${conversation.id}`)
   }
 
+  const handleBackToList = () => {
+    setSelectedConversation(null)
+    navigate('/chat')
+  }
+
   const handleNewChat = async (professionalId: string) => {
     try {
       const conversation = await chatService.createConversation([professionalId])
@@ -59,8 +64,8 @@ export default function ChatPage() {
 
   return (
     <div className="h-[calc(100vh-80px)] flex rounded-2xl overflow-hidden border border-white/10 bg-[#12121f]">
-      {/* Conversation list sidebar */}
-      <div className="w-80 shrink-0">
+      {/* Conversation list — full-screen on mobile when nothing selected, fixed rail on desktop */}
+      <div className={`w-full md:w-80 md:shrink-0 ${selectedConversation ? 'hidden md:block' : 'block'}`}>
         <ConversationList
           conversations={conversations}
           selectedId={selectedConversation?.id || null}
@@ -70,13 +75,14 @@ export default function ChatPage() {
         />
       </div>
 
-      {/* Chat window */}
-      <div className="flex-1">
+      {/* Chat window — full-screen on mobile when a conversation is selected */}
+      <div className={`flex-1 ${selectedConversation ? 'block' : 'hidden md:block'}`}>
         {selectedConversation ? (
           <ChatWindow
             conversation={selectedConversation}
             currentUserId={user?.id || ''}
             onBookSession={() => navigate('/professionals')}
+            onBack={handleBackToList}
           />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center p-8 bg-[#12121f]">

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
-import { Phone, Video, MoreVertical, AlertTriangle, Calendar, Loader2 } from 'lucide-react'
+import { Phone, Video, MoreVertical, AlertTriangle, Calendar, Loader2, ArrowLeft } from 'lucide-react'
 import type { Conversation, Message } from '@/types'
 import type { RootState } from '@/store'
 import MessageBubble from './MessageBubble'
@@ -13,9 +13,10 @@ interface Props {
   conversation: Conversation
   currentUserId: string
   onBookSession?: () => void
+  onBack?: () => void
 }
 
-export default function ChatWindow({ conversation, currentUserId, onBookSession }: Props) {
+export default function ChatWindow({ conversation, currentUserId, onBookSession, onBack }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
@@ -114,7 +115,17 @@ export default function ChatWindow({ conversation, currentUserId, onBookSession 
     <div className="h-full flex flex-col bg-[#12121f]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#0d0d1a]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Back to conversation list (mobile only) */}
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 -ml-2 rounded-xl text-gray-400 hover:text-white hover:bg-white/5 transition-colors md:hidden shrink-0"
+              title="Back to conversations"
+            >
+              <ArrowLeft size={20} />
+            </button>
+          )}
           {/* Avatar */}
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00BFFF] to-[#7C5CBF] flex items-center justify-center text-white font-semibold">
@@ -124,31 +135,32 @@ export default function ChatWindow({ conversation, currentUserId, onBookSession 
             <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-[#0d0d1a] rounded-full" />
           </div>
 
-          <div>
-            <h3 className="font-semibold text-white">{otherParticipant}</h3>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-white truncate">{otherParticipant}</h3>
             <p className="text-xs text-green-400">Online</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {/* Video call */}
-          <button className="p-2.5 rounded-xl text-gray-400 hover:text-[#00BFFF] hover:bg-white/5 transition-colors" title="Video call">
+          <button className="hidden sm:inline-flex p-2.5 rounded-xl text-gray-400 hover:text-[#00BFFF] hover:bg-white/5 transition-colors" title="Video call">
             <Video size={20} />
           </button>
 
           {/* Voice call */}
-          <button className="p-2.5 rounded-xl text-gray-400 hover:text-[#00BFFF] hover:bg-white/5 transition-colors" title="Voice call">
+          <button className="hidden sm:inline-flex p-2.5 rounded-xl text-gray-400 hover:text-[#00BFFF] hover:bg-white/5 transition-colors" title="Voice call">
             <Phone size={20} />
           </button>
 
           {/* Book session */}
           {onBookSession && (
-            <button 
+            <button
               onClick={onBookSession}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-[#00BFFF] to-[#7C5CBF] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-[#00BFFF] to-[#7C5CBF] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+              title="Book Session"
             >
               <Calendar size={16} />
-              Book Session
+              <span className="hidden sm:inline">Book Session</span>
             </button>
           )}
 

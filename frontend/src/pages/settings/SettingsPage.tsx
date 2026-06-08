@@ -144,7 +144,7 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
         <p className="text-gray-400">Manage your account preferences and settings</p>
@@ -156,14 +156,14 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar */}
-        <div className="w-64 space-y-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-0 lg:space-y-1 lg:overflow-visible lg:pb-0 lg:w-64 lg:shrink-0">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg whitespace-nowrap transition-colors lg:w-full ${
                 activeTab === tab.id
                   ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">First Name</label>
                       <input
@@ -461,7 +461,7 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-medium text-white mb-4">Theme</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <button
                       onClick={() => setAppearanceData({...appearanceData, theme: 'light'})}
                       className={`p-4 rounded-lg border ${appearanceData.theme === 'light' ? 'border-indigo-500 bg-indigo-500/20' : 'border-white/10 bg-white/5'}`}
@@ -490,7 +490,7 @@ export default function SettingsPage() {
                 
                 <div>
                   <h3 className="text-lg font-medium text-white mb-4">Text Size</h3>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <button
                       onClick={() => setAppearanceData({...appearanceData, text_size: 'small'})}
                       className={`p-4 rounded-lg border ${appearanceData.text_size === 'small' ? 'border-indigo-500 bg-indigo-500/20' : 'border-white/10 bg-white/5'}`}
@@ -532,15 +532,15 @@ export default function SettingsPage() {
               <h2 className="text-xl font-semibold text-white mb-6">Active Sessions</h2>
               
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Laptop size={20} className="text-gray-400" />
-                    <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Laptop size={20} className="text-gray-400 shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-white font-medium">Current Device</p>
-                      <p className="text-gray-400 text-sm">Chrome on Windows • {new Date().toLocaleDateString()}</p>
+                      <p className="text-gray-400 text-sm truncate">Chrome on Windows • {new Date().toLocaleDateString()}</p>
                     </div>
                   </div>
-                  <span className="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">Current</span>
+                  <span className="self-start sm:self-auto shrink-0 px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">Current</span>
                 </div>
               </div>
               
@@ -562,27 +562,27 @@ export default function SettingsPage() {
                 <p className="text-gray-400 mb-6">These actions are irreversible. Please proceed with caution.</p>
                 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                    <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-white/5 rounded-lg">
+                    <div className="min-w-0">
                       <h3 className="text-white font-medium">Deactivate Account</h3>
                       <p className="text-gray-400 text-sm">Temporarily disable your account. You can reactivate it later.</p>
                     </div>
                     <button
                       onClick={() => setShowDeactivateModal(true)}
-                      className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                      className="self-start sm:self-auto shrink-0 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
                     >
                       Deactivate
                     </button>
                   </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-                    <div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <div className="min-w-0">
                       <h3 className="text-red-400 font-medium">Delete Account</h3>
                       <p className="text-gray-400 text-sm">Permanently delete your account and all data. This cannot be undone.</p>
                     </div>
                     <button
                       onClick={() => setShowDeleteModal(true)}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                      className="self-start sm:self-auto shrink-0 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                     >
                       Delete Account
                     </button>

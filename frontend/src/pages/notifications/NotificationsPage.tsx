@@ -104,25 +104,26 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bell size={20} className="text-indigo-400" />
-          <h1 className="text-2xl font-bold text-white">Notifications Centre</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Bell size={20} className="text-indigo-400 shrink-0" />
+          <h1 className="text-2xl font-bold text-white truncate">Notifications Centre</h1>
           {isConnected && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-medium">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-medium shrink-0">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-availability-pulse" />
               Live
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
           <button
             onClick={handleMarkAllRead}
             disabled={!unreadCount || markingAll}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {markingAll ? <Loader2 size={14} className="animate-spin" /> : <CheckCheck size={14} />}
-            Mark all read
+            <span className="hidden sm:inline">Mark all read</span>
+            <span className="sm:hidden">Mark read</span>
           </button>
           <button
             onClick={() => navigate('/settings')}

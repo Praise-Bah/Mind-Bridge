@@ -255,7 +255,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Streak',            icon: Flame,         iconCls: 'text-orange-500', bgCls: 'bg-orange-50 dark:bg-orange-950/30', value: loading ? null : `${streak?.current_streak ?? 0} days` },
           { label: 'Journal Entries',   icon: BookOpen,      iconCls: 'text-indigo-500', bgCls: 'bg-indigo-50 dark:bg-indigo-950/30',  value: loading ? null : journalCount },
@@ -409,7 +409,7 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <div>
         <h2 className="font-semibold mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {QUICK_ACTIONS.map(({ icon: Icon, label, path, gradient }) => (
             <Link key={path} to={path}
               className="bg-card border rounded-xl p-3 text-center hover:shadow-md hover:-translate-y-0.5 transition-all group"

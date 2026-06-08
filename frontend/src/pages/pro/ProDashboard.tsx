@@ -613,7 +613,7 @@ function EarningsTab() {
 
   return (
     <div className="space-y-5 max-w-2xl">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Sessions this month', value: data.sessions_this_month, color: 'text-indigo-400' },
           { label: 'Total earned', value: `£${data.total_earnings.toFixed(2)}`, color: 'text-green-400' },

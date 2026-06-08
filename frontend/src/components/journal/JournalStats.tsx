@@ -128,7 +128,7 @@ export default function JournalStats({ entries, streak }: JournalStatsProps) {
       </div>
 
       {/* Writing Consistency */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Writing Consistency</h3>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={consistencyData}>
@@ -143,7 +143,7 @@ export default function JournalStats({ entries, streak }: JournalStatsProps) {
 
       {/* Top Tags */}
       {topTags.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Most Used Tags</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
@@ -180,7 +180,7 @@ export default function JournalStats({ entries, streak }: JournalStatsProps) {
       )}
 
       {/* Achievements */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Achievements</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {achievements.map((achievement, index) => (
@@ -221,7 +221,7 @@ export default function JournalStats({ entries, streak }: JournalStatsProps) {
       </div>
 
       {/* Writing Insights */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700/50">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 sm:p-6 border border-blue-200 dark:border-blue-700/50">
         <div className="flex items-center gap-2 mb-4">
           <Brain className="text-blue-600 dark:text-blue-400" size={20} />
           <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">Writing Insights</h3>

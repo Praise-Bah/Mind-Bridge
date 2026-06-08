@@ -127,8 +127,8 @@ export default function GroupDetailPage() {
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg mb-3">
             {group.name.charAt(0)}
           </div>
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div className="min-w-0">
               <h1 className="text-xl font-bold text-white">{group.name}</h1>
               <p className="text-gray-400 text-sm mt-1 max-w-md">{group.description}</p>
               <div className="flex items-center gap-1 text-gray-500 text-xs mt-2">

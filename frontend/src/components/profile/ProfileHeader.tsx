@@ -32,8 +32,8 @@ export default function ProfileHeader({ user, streak, isEditing, onEditToggle, o
 
   return (
     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6">
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-4 min-w-0">
           {/* Avatar */}
           <div className="relative group">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden">
@@ -60,10 +60,10 @@ export default function ProfileHeader({ user, streak, isEditing, onEditToggle, o
           </div>
 
           {/* User Info */}
-          <div>
-            <h1 className="text-2xl font-bold text-white mb-1">{displayName}</h1>
-            <p className="text-gray-400 mb-2">@{user.username}</p>
-            <div className="flex items-center gap-4 text-sm text-gray-400">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-white mb-1 truncate">{displayName}</h1>
+            <p className="text-gray-400 mb-2 truncate">@{user.username}</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-400">
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 <span>Joined {joinedDate}</span>
@@ -80,7 +80,7 @@ export default function ProfileHeader({ user, streak, isEditing, onEditToggle, o
         {/* Edit Button */}
         <button
           onClick={onEditToggle}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors self-start shrink-0"
         >
           {isEditing ? (
             <>

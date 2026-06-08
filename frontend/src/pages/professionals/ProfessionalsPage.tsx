@@ -103,12 +103,12 @@ export default function ProfessionalsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white/5 rounded-xl p-1 gap-1 w-fit">
+      <div className="flex bg-white/5 rounded-xl p-1 gap-1 w-fit max-w-full overflow-x-auto">
         {([['all', <Users size={14} />, 'All Professionals'], ['favourites', <Heart size={14} />, `Favourites (${favourites.length})`]] as const).map(([id, icon, label]) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
               tab === id ? 'bg-indigo-600 text-white shadow' : 'text-gray-400 hover:text-white'
             }`}
           >

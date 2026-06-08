@@ -108,8 +108,8 @@ export default function JournalPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <BookOpen size={28} />
             My Journal
@@ -120,7 +120,7 @@ export default function JournalPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="self-start sm:self-auto shrink-0 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus size={16} />
           New Entry
@@ -128,7 +128,7 @@ export default function JournalPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 overflow-x-auto">
         {[
           { id: 'entries', label: 'Entries', icon: BookOpen },
           { id: 'mood', label: 'Mood Tracker', icon: TrendingUp },
@@ -137,14 +137,14 @@ export default function JournalPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                 : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
             <tab.icon size={16} />
-            {tab.label}
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -183,14 +183,14 @@ export default function JournalPage() {
           {/* Daily Prompt */}
           {dailyPrompt && (
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700/50">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0">
                   <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Today's Prompt</h3>
                   <p className="text-blue-700 dark:text-blue-300 text-sm">{dailyPrompt}</p>
                 </div>
                 <button
                   onClick={() => setShowModal(true)}
-                  className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  className="self-start sm:self-auto shrink-0 px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
                 >
                   Write about this
                 </button>

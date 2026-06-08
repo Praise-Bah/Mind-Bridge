@@ -278,9 +278,9 @@ function ProfessionalsTab() {
         {list.map(p => (
           <div key={p.id} className="bg-white/3 border border-white/10 rounded-2xl p-5 space-y-3">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-semibold text-white">{p.user_name}</p>
-                <p className="text-sm text-gray-400">{p.user_email}</p>
+              <div className="min-w-0">
+                <p className="font-semibold text-white truncate">{p.user_name}</p>
+                <p className="text-sm text-gray-400 truncate">{p.user_email}</p>
                 <p className="text-xs text-gray-500 mt-0.5">Applied {new Date(p.created_at).toLocaleDateString()}</p>
               </div>
               {p.years_of_experience > 0 && (
@@ -400,9 +400,9 @@ function GroupsTab() {
           <div key={g.id} className="bg-white/3 border border-white/10 rounded-2xl p-5 space-y-3">
             {/* Header */}
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-white">{g.name}</p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="font-semibold text-white truncate">{g.name}</p>
                   {g.group_type && (
                     <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 text-xs border border-indigo-500/20">
                       {g.group_type}
@@ -414,7 +414,7 @@ function GroupsTab() {
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-400 mt-0.5">by {g.created_by_username} · {g.created_by_email}</p>
+                <p className="text-sm text-gray-400 mt-0.5 truncate">by {g.created_by_username} · {g.created_by_email}</p>
                 <p className="text-xs text-gray-600 mt-0.5">{new Date(g.created_at).toLocaleDateString()}</p>
               </div>
               {/* AI Score badge */}

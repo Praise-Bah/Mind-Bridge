@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { RootState } from '@/store'
-import { toggleSidebar } from '@/store/slices/uiSlice'
+import { toggleSidebar, setMobileSidebarOpen } from '@/store/slices/uiSlice'
+import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Users, MessageCircle, Video, Brain,
-  BookOpen, User, Settings, Calendar, Menu, Bell, ShieldCheck, Briefcase, Info
+  BookOpen, User, Settings, Calendar, Menu, X, Bell, ShieldCheck, Briefcase
 } from 'lucide-react'
 
 const navItems = [
@@ -18,20 +19,42 @@ const navItems = [
   { path: '/journal', icon: BookOpen, label: 'Journal' },
   { path: '/notifications', icon: Bell, label: 'Notifications', badge: true },
   { path: '/profile', icon: User, label: 'Profile' },
-  { path: '/about', icon: Info, label: 'About' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 export default function Sidebar() {
   const dispatch = useDispatch()
-  const { sidebarOpen } = useSelector((state: RootState) => state.ui)
+  const { sidebarOpen, mobileSidebarOpen } = useSelector((state: RootState) => state.ui)
   const { unreadCount } = useSelector((state: RootState) => state.notifications)
   const { user } = useSelector((state: RootState) => state.auth)
 
+  // On mobile the sidebar is an off-canvas drawer (hidden until opened via the
+  // Header's hamburger button), so it always shows full labels when visible —
+  // the icon-only "collapsed rail" only makes sense on desktop where it stays
+  // on-screen permanently and `sidebarOpen` controls its width.
+  const showLabels = sidebarOpen || mobileSidebarOpen
+  const closeMobile = () => dispatch(setMobileSidebarOpen(false))
+
   return (
-    <aside className={`bg-card border-r transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-16'}`}>
-      <div className={`flex h-16 items-center ${sidebarOpen ? 'justify-between px-4' : 'justify-center px-2'} border-b`}>
-        {sidebarOpen ? (
+    <>
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={closeMobile}
+        />
+      )}
+
+      <aside
+        className={cn(
+          'fixed lg:relative inset-y-0 left-0 z-50 bg-card border-r',
+          'transform transition-transform duration-300 ease-in-out lg:transform-none',
+          'w-64 transition-[width] lg:transition-[width]',
+          sidebarOpen ? 'lg:w-64' : 'lg:w-16',
+          mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
+      <div className={`flex h-16 items-center ${showLabels ? 'justify-between px-4' : 'justify-center px-2'} border-b`}>
+        {showLabels ? (
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="MindBridge" className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold bg-gradient-to-r from-cyan-500 to-purple-600 bg-clip-text text-transparent">
@@ -47,12 +70,15 @@ export default function Sidebar() {
           />
         )}
         {sidebarOpen && (
-          <button onClick={() => dispatch(toggleSidebar())} className="p-2 hover:bg-accent rounded-md">
+          <button onClick={() => dispatch(toggleSidebar())} className="hidden lg:block p-2 hover:bg-accent rounded-md">
             <Menu className="h-5 w-5" />
           </button>
         )}
+        <button onClick={closeMobile} className="lg:hidden p-2 hover:bg-accent rounded-md">
+          <X className="h-5 w-5" />
+        </button>
       </div>
-      <nav className="p-2 space-y-1">
+      <nav className="p-2 space-y-1" onClick={closeMobile}>
         {user?.is_professional && (
           <NavLink
             to="/pro/dashboard"
@@ -65,7 +91,7 @@ export default function Sidebar() {
             }
           >
             <Briefcase className="h-5 w-5 flex-shrink-0" />
-            {sidebarOpen && <span className="flex-1 text-sm font-medium">Pro Dashboard</span>}
+            {showLabels && <span className="flex-1 text-sm font-medium">Pro Dashboard</span>}
           </NavLink>
         )}
         {user?.is_staff && (
@@ -80,7 +106,7 @@ export default function Sidebar() {
             }
           >
             <ShieldCheck className="h-5 w-5 flex-shrink-0" />
-            {sidebarOpen && <span className="flex-1 text-sm font-medium">Admin Panel</span>}
+            {showLabels && <span className="flex-1 text-sm font-medium">Admin Panel</span>}
           </NavLink>
         )}
         {navItems.map(({ path, icon: Icon, label, badge }) => (
@@ -103,8 +129,8 @@ export default function Sidebar() {
                 </span>
               )}
             </div>
-            {sidebarOpen && <span className="flex-1">{label}</span>}
-            {sidebarOpen && badge && unreadCount > 0 && (
+            {showLabels && <span className="flex-1">{label}</span>}
+            {showLabels && badge && unreadCount > 0 && (
               <span className="ml-auto text-xs bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5 font-bold leading-none">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
@@ -113,5 +139,6 @@ export default function Sidebar() {
         ))}
       </nav>
     </aside>
+    </>
   )
 }
