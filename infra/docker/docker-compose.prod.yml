@@ -528,7 +528,7 @@ services:
     build:
       context: ../..
       dockerfile: services/notification-service/Dockerfile
-    command: celery -A core.celery worker -Q notification_tasks -l info --concurrency=4
+    command: celery -A core.celery worker -Q notification_tasks -l info --concurrency=2 --max-tasks-per-child=200
     environment:
       <<: *notification-env
     depends_on: [notification-service]
