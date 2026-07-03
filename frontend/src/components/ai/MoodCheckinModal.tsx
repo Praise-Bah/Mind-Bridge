@@ -17,7 +17,7 @@ const MOODS = [
   { emoji: '😩', label: 'Overwhelmed', value: 'overwhelmed', score: 0.15 },
 ];
 
-export default function MoodCheckinModal({ sessionId, onComplete, onSkip }: MoodCheckinModalProps) {
+export default function MoodCheckinModal({ sessionId: _sessionId, onComplete, onSkip }: MoodCheckinModalProps) {
   const [selectedMood, setSelectedMood] = useState<typeof MOODS[number] | null>(null);
 
   const handleSubmit = () => {

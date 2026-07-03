@@ -7,7 +7,7 @@ interface SessionFeedbackModalProps {
   onSkip: () => void;
 }
 
-export default function SessionFeedbackModal({ sessionId, onSubmit, onSkip }: SessionFeedbackModalProps) {
+export default function SessionFeedbackModal({ sessionId: _sessionId, onSubmit, onSkip }: SessionFeedbackModalProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
