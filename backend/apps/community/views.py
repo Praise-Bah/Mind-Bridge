@@ -390,8 +390,13 @@ class PostListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         group = CommunityGroup.objects.get(slug=self.kwargs['group_slug'])
+        # Auto-enable anonymous if user has global anonymous_mode on
+        is_anon = serializer.validated_data.get('is_anonymous', False)
+        if not is_anon and getattr(self.request.user, 'anonymous_mode', False):
+            is_anon = True
         post = serializer.save(
-            author=self.request.user, group=group, moderation_status='pending'
+            author=self.request.user, group=group,
+            is_anonymous=is_anon, moderation_status='pending',
         )
         # Trigger async AI content moderation
         from .tasks import moderate_content_task
@@ -432,8 +437,13 @@ class CommentListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = Post.objects.get(id=self.kwargs['post_id'])
+        # Auto-enable anonymous if user has global anonymous_mode on
+        is_anon = serializer.validated_data.get('is_anonymous', False)
+        if not is_anon and getattr(self.request.user, 'anonymous_mode', False):
+            is_anon = True
         comment = serializer.save(
-            author=self.request.user, post=post, moderation_status='pending'
+            author=self.request.user, post=post,
+            is_anonymous=is_anon, moderation_status='pending',
         )
         # Trigger async AI content moderation
         from .tasks import moderate_content_task

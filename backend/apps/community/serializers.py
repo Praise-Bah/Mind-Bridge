@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import CommunityGroup, Post, Comment, Reaction, Report, GroupInvitation
+from .anonymous import generate_anonymous_name
 
 
 class CommunityGroupSerializer(serializers.ModelSerializer):
@@ -108,18 +109,32 @@ class ReactionSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
+    author_avatar = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
     user_can_delete = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ['id', 'post', 'author', 'author_name', 'content',
-                  'is_anonymous', 'parent', 'replies', 'user_can_delete', 
+        fields = ['id', 'post', 'author', 'author_name', 'author_avatar', 'content',
+                  'is_anonymous', 'parent', 'replies', 'user_can_delete',
                   'is_saved', 'expires_at', 'created_at']
         read_only_fields = ['id', 'author', 'created_at']
 
     def get_author_name(self, obj):
-        return 'Anonymous Member' if obj.is_anonymous else obj.author.username
+        if obj.is_anonymous:
+            group_id = str(obj.post.group_id) if obj.post and obj.post.group_id else ''
+            return generate_anonymous_name(str(obj.author_id), group_id)
+        return obj.author.username
+
+    def get_author_avatar(self, obj):
+        if obj.is_anonymous:
+            return None
+        if obj.author.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.author.avatar.url)
+            return obj.author.avatar.url
+        return None
 
     def get_replies(self, obj):
         if obj.parent is None:
@@ -136,6 +151,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
+    author_avatar = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
     reactions_summary = serializers.SerializerMethodField()
     user_reactions = serializers.SerializerMethodField()
@@ -144,14 +160,28 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'group', 'group_name', 'group_slug', 'author', 'author_name', 'content', 'image',
+        fields = ['id', 'group', 'group_name', 'group_slug', 'author', 'author_name',
+                  'author_avatar', 'content', 'image',
                   'mood_tag', 'is_anonymous', 'is_pinned', 'comments_count',
                   'reactions_summary', 'user_reactions', 'is_saved', 'expires_at',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'group', 'author', 'created_at', 'updated_at']
 
     def get_author_name(self, obj):
-        return 'Anonymous Member' if obj.is_anonymous else obj.author.username
+        if obj.is_anonymous:
+            group_id = str(obj.group_id) if obj.group_id else ''
+            return generate_anonymous_name(str(obj.author_id), group_id)
+        return obj.author.username
+
+    def get_author_avatar(self, obj):
+        if obj.is_anonymous:
+            return None
+        if obj.author.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.author.avatar.url)
+            return obj.author.avatar.url
+        return None
 
     def get_group_name(self, obj):
         return obj.group.name

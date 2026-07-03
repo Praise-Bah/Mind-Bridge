@@ -487,7 +487,7 @@ export default function DashboardPage() {
                     <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
                       <Users className="h-3 w-3 text-primary" />
                     </div>
-                    <span className="text-xs font-medium">{post.is_anonymous ? 'Anonymous' : post.author_name}</span>
+                    <span className="text-xs font-medium">{post.author_name}</span>
                     <span className="text-xs text-muted-foreground ml-auto truncate max-w-[80px]">{post.group_name}</span>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">{post.content}</p>

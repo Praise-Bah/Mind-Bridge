@@ -5,21 +5,12 @@ import { Heart, Shield, Brain, MapPin, ExternalLink, Menu, X } from 'lucide-reac
 const team = [
   {
     name: 'Precious Maloba Senge Abene Makia',
-    role: 'Co-Founder & Visioner',
+    role: 'Founder & Developer',
     photo: '/team/precious-makia.jpeg',
     location: 'Yaoundé, Cameroon',
-    bio: 'Precious is the visionary heart behind MindBridge. A Level 4 Software Engineering student at The ICT University in Yaoundé, she has built mobile applications with Flutter, worked on IoT projects, and holds certifications in Linux (LFCA), Software Project Management, and Meta Database Engineering. Bilingual in English and French, she brings a deeply human perspective to technology — driven by the belief that software can be a force for healing.',
-    tags: ['Python', 'Java', 'Flutter', 'SQL', 'Bilingual EN/FR'],
+    bio: 'Precious is the visionary and builder behind MindBridge. A BSc Software Engineering student at The ICT University in Yaoundé, she designed and developed the platform from concept to deployment — from the Django microservices backend and RAG-powered AI companion to the React frontend and real-time chat system. She has built mobile applications with Flutter, worked on IoT projects, and holds certifications in Linux (LFCA), Software Project Management, and Meta Database Engineering. Bilingual in English and French, she brings a deeply human perspective to technology — driven by the belief that software can be a force for healing.',
+    tags: ['Python', 'React', 'TypeScript', 'Flutter', 'AI', 'Bilingual EN/FR'],
     tagColor: 'bg-purple-500/20 text-purple-300',
-  },
-  {
-    name: 'Praise Bucuzong Bah',
-    role: 'Founder & Lead Engineer',
-    photo: '/team/praise-bah.jpg',
-    location: 'Douala, Cameroon',
-    bio: 'Praise is the builder who turned vision into reality. A Full-Stack and Mobile Engineer with over 2 years of experience and 8+ production applications shipped, he is a BSc student at The ICT University (2023–2026) and co-founder of BinaryNext Gen. An early adopter of AI-assisted development, he built MindBridge\'s entire technical stack — from the Django SOA backend and real-time WebSocket chat to the React frontend and AI companion — using React, TypeScript, Flutter, Python, and Node.js.',
-    tags: ['React', 'TypeScript', 'Flutter', 'Python', 'AI'],
-    tagColor: 'bg-cyan-500/20 text-cyan-300',
   },
 ]
 
@@ -113,7 +104,7 @@ export default function AboutPage() {
             <br />for mental wellness in Africa
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-            Two students. One mission. A platform built to bridge the gap between people and the mental health support they deserve.
+            One student. One mission. A platform built to bridge the gap between people and the mental health support they deserve.
           </p>
         </div>
       </section>
@@ -140,7 +131,7 @@ export default function AboutPage() {
             </p>
             <blockquote className="border-l-4 border-cyan-500 pl-6 py-2">
               <p className="text-gray-300 italic text-lg">
-                "Two students at The ICT University in Cameroon decided to build that space."
+                "One student at The ICT University in Cameroon decided to build that space."
               </p>
             </blockquote>
           </div>
@@ -151,8 +142,8 @@ export default function AboutPage() {
       <section className="py-20 px-4 bg-white/[0.02]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Meet the Team</h2>
-            <p className="text-gray-400 text-lg">The people behind every line of code and every design decision</p>
+            <h2 className="text-4xl font-bold mb-4">Meet the Founder</h2>
+            <p className="text-gray-400 text-lg">The person behind every line of code and every design decision</p>
           </div>
 
           <div className="flex flex-col md:flex-row gap-8 justify-center">

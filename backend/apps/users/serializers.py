@@ -10,11 +10,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
     role = serializers.ChoiceField(choices=['user', 'professional'], default='user', write_only=True)
+    # Professional-only fields (required when role=professional)
+    license_number = serializers.CharField(max_length=100, required=False, write_only=True, allow_blank=True)
+    professional_bio = serializers.CharField(required=False, write_only=True, allow_blank=True)
+    years_of_experience = serializers.IntegerField(required=False, write_only=True, min_value=0, default=0)
+    specializations_text = serializers.CharField(required=False, write_only=True, allow_blank=True,
+                                                 help_text='Comma-separated specializations')
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'password', 'password_confirm', 
-                  'first_name', 'last_name', 'role']
+        fields = ['id', 'email', 'username', 'password', 'password_confirm',
+                  'first_name', 'last_name', 'role',
+                  'license_number', 'professional_bio', 'years_of_experience', 'specializations_text']
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
@@ -24,16 +31,27 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         role = validated_data.pop('role', 'user')
-        
+        license_number = validated_data.pop('license_number', '')
+        professional_bio = validated_data.pop('professional_bio', '')
+        years_of_experience = validated_data.pop('years_of_experience', 0)
+        specializations_text = validated_data.pop('specializations_text', '')
+
         # Create user with is_verified=False (requires email verification)
         user = User.objects.create_user(**validated_data)
         user.is_verified = False
         user.save()
-        
-        # If registering as professional, create pending application
+
+        # If registering as professional, create pending application with details
         if role == 'professional':
-            ProfessionalApplication.objects.create(user=user)
-        
+            specs = [s.strip() for s in specializations_text.split(',') if s.strip()] if specializations_text else []
+            ProfessionalApplication.objects.create(
+                user=user,
+                license_number=license_number,
+                bio=professional_bio,
+                years_of_experience=years_of_experience,
+                specializations=specs,
+            )
+
         return user
 
 
@@ -170,7 +188,7 @@ class ProfessionalApplicationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProfessionalApplication
-        fields = ['id', 'user', 'user_email', 'user_name', 'credentials_document', 
+        fields = ['id', 'user', 'user_email', 'user_name', 'credentials_document', 'cv',
                   'license_number', 'specializations', 'years_of_experience', 'bio',
                   'status', 'reviewed_by', 'reviewed_at', 'rejection_reason', 'created_at']
         read_only_fields = ['id', 'user', 'status', 'reviewed_by', 'reviewed_at', 'created_at']

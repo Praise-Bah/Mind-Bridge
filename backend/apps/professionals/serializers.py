@@ -64,6 +64,12 @@ class ProfessionalProfileSerializer(serializers.ModelSerializer):
         return FavouriteProfessional.objects.filter(user=request.user, professional=obj).exists()
 
 
+class OwnProfessionalProfileSerializer(ProfessionalProfileSerializer):
+    """Serializer for a professional viewing their own profile — includes private fields like CV."""
+    class Meta(ProfessionalProfileSerializer.Meta):
+        fields = ProfessionalProfileSerializer.Meta.fields + ['cv']
+
+
 class BookingSerializer(serializers.ModelSerializer):
     professional_name = serializers.CharField(source='professional.user.get_full_name', read_only=True)
     has_review = serializers.SerializerMethodField()

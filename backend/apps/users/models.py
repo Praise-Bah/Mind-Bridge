@@ -228,6 +228,8 @@ class ProfessionalApplication(BaseModel):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='professional_application')
     credentials_document = models.FileField(upload_to='credentials/', blank=True, null=True)
+    cv = models.FileField(upload_to='professional_cvs/', blank=True, null=True,
+                          help_text='Private CV — visible only to the applicant and admins.')
     license_number = models.CharField(max_length=100, blank=True)
     specializations = models.JSONField(default=list)
     years_of_experience = models.PositiveIntegerField(default=0)
@@ -256,6 +258,36 @@ class ProfessionalApplication(BaseModel):
         self.user.is_professional = True
         self.user.is_verified = True
         self.user.save()
+
+        # Auto-create ProfessionalProfile in the monolith if it doesn't exist
+        try:
+            from apps.professionals.models import ProfessionalProfile, Specialization
+            profile, created = ProfessionalProfile.objects.get_or_create(
+                user=self.user,
+                defaults={
+                    'title': 'Mental Health Professional',
+                    'bio': self.bio or '',
+                    'credentials': self.license_number or '',
+                    'years_of_experience': self.years_of_experience or 0,
+                    'session_rate': 0,
+                    'status': 'approved',
+                    'approved_at': timezone.now(),
+                },
+            )
+            if created and self.specializations:
+                for spec_name in self.specializations:
+                    from django.utils.text import slugify
+                    spec, _ = Specialization.objects.get_or_create(
+                        slug=slugify(spec_name),
+                        defaults={'name': spec_name},
+                    )
+                    profile.specializations.add(spec)
+            if self.cv:
+                profile.cv = self.cv
+                profile.save(update_fields=['cv'])
+        except Exception:
+            pass
+
         # Publish event — professionals service handles ProfessionalProfile creation
         try:
             from mindbridge_common.events import publisher

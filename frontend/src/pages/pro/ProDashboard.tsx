@@ -661,17 +661,17 @@ function EarningsTab() {
 // Profile Editor
 // ─────────────────────────────────────────────────────────────
 function ProfileEditorTab() {
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
     title: '', bio: '', credentials: '', years_of_experience: '', session_rate: '', gender: '', languages: '',
   })
+  const [cvFile, setCvFile] = useState<File | null>(null)
+  const [currentCv, setCurrentCv] = useState<string | null>(null)
 
   useEffect(() => {
     proDashboardService.getProfile().then(p => {
-      setProfile(p)
       setForm({
         title: p.title ?? '',
         bio: p.bio ?? '',
@@ -681,19 +681,26 @@ function ProfileEditorTab() {
         gender: p.gender ?? '',
         languages: Array.isArray(p.languages) ? (p.languages as string[]).join(', ') : '',
       })
+      setCurrentCv(p.cv ?? null)
     }).finally(() => setLoading(false))
   }, [])
 
   async function handleSave() {
     setSaving(true)
     try {
-      await proDashboardService.updateProfile({
-        ...form,
-        years_of_experience: parseInt(form.years_of_experience) || 0,
-        session_rate: parseFloat(form.session_rate) || 0,
-        languages: form.languages.split(',').map(l => l.trim()).filter(Boolean),
-      })
+      const formData = new FormData()
+      formData.append('title', form.title)
+      formData.append('bio', form.bio)
+      formData.append('credentials', form.credentials)
+      formData.append('years_of_experience', String(parseInt(form.years_of_experience) || 0))
+      formData.append('session_rate', String(parseFloat(form.session_rate) || 0))
+      formData.append('gender', form.gender)
+      const langs = form.languages.split(',').map(l => l.trim()).filter(Boolean)
+      formData.append('languages', JSON.stringify(langs))
+      if (cvFile) formData.append('cv', cvFile)
+      await proDashboardService.updateProfile(formData)
       setSaved(true)
+      if (cvFile) { setCurrentCv(cvFile.name); setCvFile(null) }
       setTimeout(() => setSaved(false), 2500)
     } catch {
       // error is visible in console; button re-enables so user can retry
@@ -741,6 +748,21 @@ function ProfileEditorTab() {
         </select>
       </div>
 
+      {/* CV Upload (private — only you and admins can see this) */}
+      <div>
+        <label className="text-xs text-gray-400 block mb-1">CV / Resume (private — only visible to you and admins)</label>
+        {currentCv && !cvFile && (
+          <p className="text-xs text-indigo-400 mb-1.5">Current file: {typeof currentCv === 'string' ? currentCv.split('/').pop() : 'Uploaded'}</p>
+        )}
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={e => setCvFile(e.target.files?.[0] ?? null)}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+        />
+        {cvFile && <p className="text-xs text-green-400 mt-1">New file selected: {cvFile.name}</p>}
+      </div>
+
       <div className="flex gap-3 items-center">
         <button onClick={handleSave} disabled={saving}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm hover:bg-indigo-700 disabled:opacity-40 transition-colors">
@@ -748,12 +770,6 @@ function ProfileEditorTab() {
         </button>
         {saved && <p className="text-xs text-green-400">✓ Profile updated</p>}
       </div>
-
-      {profile && (
-        <p className="text-xs text-gray-500 pt-2">
-          To update your profile photo or intro video, please contact support or use the file upload feature (coming soon).
-        </p>
-      )}
     </div>
   )
 }

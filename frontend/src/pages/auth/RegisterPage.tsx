@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { register, setCredentials } from '@/store/slices/authSlice'
 import type { AppDispatch, RootState } from '@/store'
 import toast from 'react-hot-toast'
-import { Mail, User, Loader2 } from 'lucide-react'
+import { Mail, User, Loader2, Briefcase, FileText, Award, Hash } from 'lucide-react'
 import RoleSelector from '@/components/auth/RoleSelector'
 import PasswordInput from '@/components/auth/PasswordInput'
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton'
@@ -23,6 +23,10 @@ export default function RegisterPage() {
     password: '',
     password_confirm: '',
     role: 'user' as 'user' | 'professional',
+    license_number: '',
+    professional_bio: '',
+    years_of_experience: '',
+    specializations_text: '',
   })
   const [shakeError, setShakeError] = useState(false)
 
@@ -49,7 +53,14 @@ export default function RegisterPage() {
       return
     }
 
-    const result = await dispatch(register(formData))
+    const { years_of_experience: yoeStr, ...rest } = formData
+    const submitData = {
+      ...rest,
+      ...(formData.role === 'professional' ? {
+        years_of_experience: parseInt(yoeStr) || 0,
+      } : {}),
+    }
+    const result = await dispatch(register(submitData))
     if (register.fulfilled.match(result)) {
       toast.success('Account created! Please verify your email.')
       navigate('/verify-email', { state: { email: formData.email, role: formData.role } })
@@ -199,6 +210,79 @@ export default function RegisterPage() {
           error={formData.password_confirm && !passwordsMatch ? 'Passwords do not match' : undefined}
           autoComplete="new-password"
         />
+
+        {/* Professional-only fields */}
+        {formData.role === 'professional' && (
+          <div className="space-y-4 p-4 rounded-xl border-2 border-purple-500/20 bg-purple-500/5">
+            <p className="text-sm font-medium text-purple-300 flex items-center gap-2">
+              <Briefcase size={16} />
+              Professional Details
+            </p>
+
+            {/* License Number */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-gray-300">License Number</label>
+              <div className="relative">
+                <Hash size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.license_number}
+                  onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder-gray-500 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                  placeholder="e.g. PSY-12345"
+                />
+              </div>
+            </div>
+
+            {/* Specializations */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-gray-300">Specializations</label>
+              <div className="relative">
+                <Award size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={formData.specializations_text}
+                  onChange={(e) => setFormData({ ...formData, specializations_text: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder-gray-500 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                  placeholder="Anxiety, Depression, CBT (comma-separated)"
+                />
+              </div>
+            </div>
+
+            {/* Years of Experience */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-gray-300">Years of Experience</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.years_of_experience}
+                onChange={(e) => setFormData({ ...formData, years_of_experience: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder-gray-500 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 transition-all"
+                placeholder="5"
+              />
+            </div>
+
+            {/* Professional Bio */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-gray-300">Professional Bio</label>
+              <div className="relative">
+                <FileText size={18} className="absolute left-3 top-3 text-gray-400" />
+                <textarea
+                  value={formData.professional_bio}
+                  onChange={(e) => setFormData({ ...formData, professional_bio: e.target.value })}
+                  rows={3}
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-white/10 bg-white/5 text-white placeholder-gray-500 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/30 transition-all resize-none"
+                  placeholder="Brief description of your qualifications and approach…"
+                />
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500">
+              Your application will be reviewed by an admin before your professional profile is activated.
+              You can upload your CV after logging into your professional dashboard.
+            </p>
+          </div>
+        )}
 
         {/* Submit Button */}
         <button

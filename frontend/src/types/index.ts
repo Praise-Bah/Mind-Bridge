@@ -123,6 +123,11 @@ export interface RegisterData {
   password_confirm: string
   first_name: string
   last_name: string
+  role?: 'user' | 'professional'
+  license_number?: string
+  professional_bio?: string
+  years_of_experience?: number
+  specializations_text?: string
 }
 
 export interface AuthResponse {
@@ -199,6 +204,7 @@ export interface Post {
   group_slug: string
   author: string
   author_name: string
+  author_avatar: string | null
   content: string
   image: string | null
   mood_tag: string | null
@@ -218,6 +224,7 @@ export interface Comment {
   post: string
   author: string
   author_name: string
+  author_avatar: string | null
   content: string
   is_anonymous: boolean
   parent: string | null

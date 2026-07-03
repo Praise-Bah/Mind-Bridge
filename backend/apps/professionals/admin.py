@@ -13,6 +13,16 @@ class ProfessionalProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'title', 'status', 'session_rate', 'years_of_experience']
     list_filter = ['status', 'specializations']
     search_fields = ['user__email', 'user__first_name', 'user__last_name']
+    readonly_fields = ['cv']
+    fieldsets = (
+        (None, {'fields': ('user', 'title', 'bio', 'credentials', 'years_of_experience',
+                           'specializations', 'languages', 'session_rate', 'gender', 'status',
+                           'rejection_reason', 'approved_at', 'payout_requested')}),
+        ('Private Files', {
+            'fields': ('cv', 'credential_documents', 'intro_video'),
+            'description': 'CV is private — only visible here and to the professional.',
+        }),
+    )
     actions = ['approve_professionals', 'reject_professionals']
 
     def approve_professionals(self, request, queryset):

@@ -273,9 +273,9 @@ class ProProfileView(APIView):
     permission_classes = [IsProfessional]
 
     def get(self, request):
-        from .serializers import ProfessionalProfileSerializer
+        from .serializers import OwnProfessionalProfileSerializer
         profile = request.user.professional_profile
-        serializer = ProfessionalProfileSerializer(profile, context={'request': request})
+        serializer = OwnProfessionalProfileSerializer(profile, context={'request': request})
         return Response(serializer.data)
 
     def patch(self, request):
@@ -284,6 +284,9 @@ class ProProfileView(APIView):
 
         updatable = ['title', 'bio', 'credentials', 'years_of_experience',
                      'languages', 'session_rate', 'gender']
+
+        if 'cv' in request.FILES:
+            profile.cv = request.FILES['cv']
         for field in updatable:
             if field in data:
                 setattr(profile, field, data[field])
@@ -302,8 +305,8 @@ class ProProfileView(APIView):
 
         profile.save()
 
-        from .serializers import ProfessionalProfileSerializer
-        return Response(ProfessionalProfileSerializer(profile, context={'request': request}).data)
+        from .serializers import OwnProfessionalProfileSerializer
+        return Response(OwnProfessionalProfileSerializer(profile, context={'request': request}).data)
 
 
 # ────────────────────────────────────────────────────────────────

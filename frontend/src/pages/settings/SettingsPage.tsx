@@ -400,13 +400,16 @@ export default function SettingsPage() {
                     <label className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Eye size={18} className="text-gray-400" />
-                        <span className="text-gray-300">Anonymous mode</span>
+                        <div>
+                          <span className="text-gray-300">Anonymous mode</span>
+                          <p className="text-xs text-gray-500 mt-0.5">All your community posts and comments will use a unique pseudonym instead of your real name</p>
+                        </div>
                       </div>
                       <input
                         type="checkbox"
                         checked={privacyData.anonymous_mode}
                         onChange={(e) => setPrivacyData({...privacyData, anonymous_mode: e.target.checked})}
-                        className="w-5 h-5 rounded"
+                        className="w-5 h-5 rounded flex-shrink-0"
                       />
                     </label>
                     

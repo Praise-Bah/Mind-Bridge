@@ -153,7 +153,7 @@ export default function PostCreationModal({ groups, defaultGroupSlug, onClose, o
 
           {isAnonymous && (
             <p className="text-xs text-indigo-400 bg-indigo-500/10 rounded-lg px-3 py-2">
-              Your name will appear as "Anonymous Member"
+              Your identity will be hidden behind a unique pseudonym (e.g. "Brave Owl")
             </p>
           )}
 

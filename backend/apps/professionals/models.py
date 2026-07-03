@@ -37,7 +37,9 @@ class ProfessionalProfile(BaseModel):
     session_rate = models.DecimalField(max_digits=10, decimal_places=2)
     intro_video = models.FileField(upload_to='professional_videos/', blank=True, null=True)
     credential_documents = models.FileField(upload_to='credentials/', blank=True, null=True)
-    
+    cv = models.FileField(upload_to='professional_cvs/', blank=True, null=True,
+                          help_text='Private CV — visible only to the professional and admins.')
+
     GENDER_CHOICES = [
         ('male', 'Male'),
         ('female', 'Female'),

@@ -20,7 +20,7 @@ export default function ShareToJournalModal({ post, onClose }: Props) {
         `Saved from ${post.group_name} community:`,
         '',
         `"${post.content}"`,
-        post.author_name !== 'Anonymous Member' ? `— ${post.author_name}` : '— Anonymous Member',
+        `— ${post.author_name}`,
         '',
         ...(note.trim() ? ['My thoughts:', note.trim()] : []),
       ].join('\n')
