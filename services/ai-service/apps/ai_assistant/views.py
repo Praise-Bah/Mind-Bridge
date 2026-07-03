@@ -10,8 +10,10 @@ from mindbridge_common.health import ServiceHealthView
 from .models import AISession, AIMessage
 from .serializers import (
     AISessionSerializer, AISessionListSerializer, ChatRequestSerializer,
-    RateMessageSerializer, MoodAnalysisSerializer,
+    RateMessageSerializer, MoodAnalysisSerializer, MoodCheckinSerializer,
+    SessionFeedbackSerializer,
 )
+from .crisis import CrisisDetector, CrisisEscalation
 from .services import AIService
 
 
@@ -58,17 +60,41 @@ class ChatView(APIView):
                 user_id=request.user.user_id, title=message[:50]
             )
 
-        AIMessage.objects.create(session=session, role='user', content=message)
+        # Crisis detection on user message
+        detector = CrisisDetector()
+        crisis_analysis = detector.analyze(message)
+
+        AIMessage.objects.create(
+            session=session,
+            role='user',
+            content=message,
+            distress_indicators=crisis_analysis['distress_score'],
+            crisis_level=crisis_analysis['crisis_level'],
+            detected_conditions=crisis_analysis['detected_conditions'],
+        )
 
         all_messages = list(session.messages.order_by('created_at').values('role', 'content'))
         previous_messages = all_messages[:-1] if all_messages else []
 
         ai_service = AIService()
-        response_text = ai_service.get_response(previous_messages, message)
+        retrieved_passages = ai_service._retrieve_context(message)
+        response_text = ai_service.get_response(previous_messages, message, retrieved_passages)
+
+        # Crisis escalation — prepend resources if needed, notify admins
+        escalation = CrisisEscalation()
+        response_text = escalation.process(
+            crisis_analysis, response_text,
+            user_id=str(request.user.user_id),
+            session_id=str(session.id),
+        )
 
         AIMessage.objects.create(session=session, role='assistant', content=response_text)
 
-        return Response({'session_id': str(session.id), 'response': response_text})
+        return Response({
+            'session_id': str(session.id),
+            'response': response_text,
+            'crisis_level': crisis_analysis['crisis_level'],
+        })
 
 
 class ChatStreamView(APIView):
@@ -87,29 +113,56 @@ class ChatStreamView(APIView):
             )
 
         ai_service = AIService()
-        distress_count = ai_service.detect_distress(message)
+
+        # Crisis detection on user message
+        detector = CrisisDetector()
+        crisis_analysis = detector.analyze(message)
 
         AIMessage.objects.create(
             session=session,
             role='user',
             content=message,
-            distress_indicators=distress_count,
+            distress_indicators=crisis_analysis['distress_score'],
+            crisis_level=crisis_analysis['crisis_level'],
+            detected_conditions=crisis_analysis['detected_conditions'],
         )
 
         all_messages = list(session.messages.order_by('created_at').values('role', 'content'))
         previous_messages = all_messages[:-1] if all_messages else []
+        retrieved_passages = ai_service._retrieve_context(message)
+
+        escalation = CrisisEscalation()
 
         def stream_generator():
             full_response = ''
-            for chunk in ai_service.stream_response(previous_messages, message):
+            for chunk in ai_service.get_streaming_response(previous_messages, message, retrieved_passages):
                 full_response += chunk
                 yield f'data: {chunk}\n\n'
-            AIMessage.objects.create(session=session, role='assistant', content=full_response)
+
+            # Apply crisis escalation to the complete response
+            full_response = escalation.process(
+                crisis_analysis, full_response,
+                user_id=str(request.user.user_id),
+                session_id=str(session.id),
+            )
+
+            AIMessage.objects.create(
+                session=session, role='assistant', content=full_response,
+                crisis_level=crisis_analysis['crisis_level'],
+                detected_conditions=crisis_analysis['detected_conditions'],
+            )
             session.update_message_count()
             session.total_distress_indicators = session.messages.aggregate(
                 total=models.Sum('distress_indicators')
             )['total'] or 0
             session.save(update_fields=['total_distress_indicators'])
+
+            # Auto-classify topics every 5 messages
+            if session.message_count % 5 == 0 and session.message_count > 0:
+                all_msgs = list(session.messages.order_by('created_at').values('role', 'content'))
+                session.topic_tags = ai_service.classify_topics(all_msgs)
+                session.save(update_fields=['topic_tags'])
+
             yield 'data: [DONE]\n\n'
 
         return StreamingHttpResponse(stream_generator(), content_type='text/event-stream')
@@ -152,6 +205,46 @@ class MoodDetectionView(APIView):
         ai_service = AIService()
         mood_data = ai_service.analyze_mood(serializer.validated_data['message'])
         return Response(mood_data)
+
+
+class MoodCheckinView(APIView):
+    """Pre-session mood check-in — captures mood before AI conversation starts."""
+
+    def post(self, request, pk):
+        session = get_object_or_404(AISession, pk=pk, user_id=request.user.user_id)
+        serializer = MoodCheckinSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        session.initial_mood = serializer.validated_data['mood']
+        session.initial_mood_score = serializer.validated_data['mood_score']
+        session.mood_checkin_completed = True
+        session.save(update_fields=['initial_mood', 'initial_mood_score', 'mood_checkin_completed'])
+
+        return Response({
+            'status': 'mood_recorded',
+            'session_id': str(session.id),
+            'initial_mood': session.initial_mood,
+            'initial_mood_score': session.initial_mood_score,
+        })
+
+
+class SessionFeedbackView(APIView):
+    """Post-session feedback — captures user's rating and comments after session."""
+
+    def post(self, request, pk):
+        session = get_object_or_404(AISession, pk=pk, user_id=request.user.user_id)
+        serializer = SessionFeedbackSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        session.feedback_rating = serializer.validated_data['rating']
+        session.feedback_text = serializer.validated_data.get('text', '')
+        session.save(update_fields=['feedback_rating', 'feedback_text'])
+
+        return Response({
+            'status': 'feedback_recorded',
+            'session_id': str(session.id),
+            'feedback_rating': session.feedback_rating,
+        })
 
 
 class AvailableModelsView(APIView):

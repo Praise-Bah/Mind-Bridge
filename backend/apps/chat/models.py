@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from apps.users.models import BaseModel
+from .encryption import encrypt_message, decrypt_message
 
 
 class Conversation(BaseModel):
@@ -45,6 +46,7 @@ class Message(BaseModel):
     attachment = models.FileField(upload_to='chat_attachments/', blank=True, null=True)
     is_read = models.BooleanField(default=False, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
+    is_encrypted = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'messages'
@@ -55,6 +57,22 @@ class Message(BaseModel):
 
     def __str__(self):
         return f"Message from {self.sender.username}"
+
+    def save(self, *args, **kwargs):
+        # Encrypt content before saving if not already encrypted
+        if self.content and not self._state.adding is False:
+            if not getattr(self, '_content_encrypted', False):
+                self.content = encrypt_message(self.content)
+                self.is_encrypted = True
+                self._content_encrypted = True
+        super().save(*args, **kwargs)
+
+    @property
+    def decrypted_content(self):
+        """Return the decrypted message content."""
+        if self.is_encrypted:
+            return decrypt_message(self.content)
+        return self.content
 
 
 class MessageRead(BaseModel):

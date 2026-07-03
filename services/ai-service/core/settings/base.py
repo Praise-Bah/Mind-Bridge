@@ -84,7 +84,7 @@ REDIS_EVENT_BUS_URL = config('REDIS_EVENT_BUS_URL', default='redis://localhost:6
 
 # AI APIs
 OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')
-OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='anthropic/claude-sonnet-4')
+OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='meta-llama/llama-3.1-8b-instruct')
 SITE_URL = config('SITE_URL', default='http://localhost:3000')
 
 # Available models for group evaluation (multi-model consensus)

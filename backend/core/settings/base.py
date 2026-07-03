@@ -127,13 +127,36 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
-# JWT Settings
+# JWT Settings — RS256 asymmetric signing
+_jwt_private_key_path = config('JWT_PRIVATE_KEY_PATH', default='')
+_jwt_public_key_path = config('JWT_PUBLIC_KEY_PATH', default='')
+
+_jwt_signing_key = None
+_jwt_verifying_key = None
+
+if _jwt_private_key_path:
+    try:
+        with open(_jwt_private_key_path, 'r') as f:
+            _jwt_signing_key = f.read()
+    except FileNotFoundError:
+        pass
+
+if _jwt_public_key_path:
+    try:
+        with open(_jwt_public_key_path, 'r') as f:
+            _jwt_verifying_key = f.read()
+    except FileNotFoundError:
+        pass
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
+    'ALGORITHM': 'RS256' if _jwt_signing_key else 'HS256',
+    'SIGNING_KEY': _jwt_signing_key or SECRET_KEY,
+    'VERIFYING_KEY': _jwt_verifying_key or '',
 }
 
 # CORS Settings
@@ -179,7 +202,7 @@ CHANNEL_LAYERS = {
 # External API Keys
 ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
 OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')
-OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='anthropic/claude-sonnet-4')
+OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='meta-llama/llama-3.1-8b-instruct')
 YOUTUBE_API_KEY = config('YOUTUBE_API_KEY', default='')
 SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
 SITE_URL = config('SITE_URL', default='http://localhost:3000')

@@ -90,13 +90,22 @@ export const aiService = {
 
   streamMessage(message: string, sessionId?: string): EventSource {
     const token = localStorage.getItem('token')
-    // In production VITE_API_URL points to the VPS (e.g. https://your-vps.com/api/v1).
-    // In dev it is unset, so we fall back to the current origin (proxied by Vite).
     const apiBase = ((import.meta as any).env?.VITE_API_URL || `${window.location.origin}/api/v1`).replace(/\/$/, '')
     const url = new URL(`${apiBase}/ai/chat/stream/`)
     url.searchParams.set('message', message)
     if (sessionId) url.searchParams.set('session_id', sessionId)
     if (token) url.searchParams.set('token', token)
     return new EventSource(url.toString())
+  },
+
+  async submitMoodCheckin(sessionId: string, mood: string, moodScore: number): Promise<void> {
+    await api.post(`/ai/sessions/${sessionId}/mood-checkin/`, {
+      mood,
+      mood_score: moodScore,
+    })
+  },
+
+  async submitSessionFeedback(sessionId: string, rating: number, text: string = ''): Promise<void> {
+    await api.post(`/ai/sessions/${sessionId}/feedback/`, { rating, text })
   },
 }

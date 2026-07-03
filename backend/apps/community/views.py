@@ -390,7 +390,12 @@ class PostListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         group = CommunityGroup.objects.get(slug=self.kwargs['group_slug'])
-        serializer.save(author=self.request.user, group=group)
+        post = serializer.save(
+            author=self.request.user, group=group, moderation_status='pending'
+        )
+        # Trigger async AI content moderation
+        from .tasks import moderate_content_task
+        moderate_content_task.delay('post', str(post.id), post.content, group.name)
 
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -427,7 +432,15 @@ class CommentListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         post = Post.objects.get(id=self.kwargs['post_id'])
-        comment = serializer.save(author=self.request.user, post=post)
+        comment = serializer.save(
+            author=self.request.user, post=post, moderation_status='pending'
+        )
+        # Trigger async AI content moderation
+        from .tasks import moderate_content_task
+        moderate_content_task.delay(
+            'comment', str(comment.id), comment.content,
+            post.group.name if post.group else 'General',
+        )
         self._notify_mentions(comment)
 
     def _notify_mentions(self, comment):

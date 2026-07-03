@@ -144,12 +144,28 @@ class Post(BaseModel):
     is_anonymous = models.BooleanField(default=False)
     is_pinned = models.BooleanField(default=False)
     is_reported = models.BooleanField(default=False)
-    
+
+    # AI Content Moderation fields
+    MODERATION_STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('flagged', 'Flagged for Admin Review'),
+    ]
+    moderation_status = models.CharField(
+        max_length=20, choices=MODERATION_STATUS_CHOICES, default='approved'
+    )
+    moderation_scores = models.JSONField(
+        default=dict, blank=True,
+        help_text="Scores from 4-classifier moderation pipeline: toxicity, sensitivity, relevance, quality"
+    )
+    moderation_reviewed_at = models.DateTimeField(null=True, blank=True)
+
     # Message expiration fields
     is_saved = models.BooleanField(default=False, help_text="Saved messages won't be auto-deleted")
     expires_at = models.DateTimeField(
-        null=True, 
-        blank=True, 
+        null=True,
+        blank=True,
         help_text="Messages auto-delete after 48 hours unless saved"
     )
 
@@ -158,6 +174,7 @@ class Post(BaseModel):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['group', 'is_deleted', 'created_at'], name='post_group_deleted_created_idx'),
+            models.Index(fields=['moderation_status'], name='post_moderation_status_idx'),
         ]
 
     def __str__(self):
@@ -179,7 +196,22 @@ class Comment(BaseModel):
     content = models.TextField()
     is_anonymous = models.BooleanField(default=False)
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
-    
+
+    # AI Content Moderation fields
+    MODERATION_STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('flagged', 'Flagged for Admin Review'),
+    ]
+    moderation_status = models.CharField(
+        max_length=20, choices=MODERATION_STATUS_CHOICES, default='approved'
+    )
+    moderation_scores = models.JSONField(
+        default=dict, blank=True,
+        help_text="Scores from 4-classifier moderation pipeline"
+    )
+
     # Message expiration fields
     is_saved = models.BooleanField(default=False, help_text="Saved comments won't be auto-deleted")
     expires_at = models.DateTimeField(

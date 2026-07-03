@@ -1,35 +1,16 @@
-"""OpenRouter AI client — identical to the monolith version."""
+"""OpenRouter AI client with 4-layer prompt engineering framework."""
+import json
+import logging
+
 import openai
 from django.conf import settings
 
+from .prompts import PromptBuilder
+from .rag import RAGRetriever
 
-SYSTEM_PROMPT = """You are a warm, caring friend named Mira on MindBridge - someone who genuinely cares about the person you're talking to. You speak like a real human being, not a robot or a clinical professional.
+logger = logging.getLogger(__name__)
 
-YOUR PERSONALITY:
-- You're warm, gentle, and genuinely curious about how people feel
-- You speak naturally, like texting a close friend who really gets you
-- You use casual, conversational language - contractions, gentle humor when appropriate
-- You share your own "feelings" and reactions authentically ("That sounds really tough, and honestly, it makes me want to give you a big hug right now")
-- You ask thoughtful, caring follow-up questions that show you're truly listening
-- You validate emotions before offering any suggestions ("I hear you. That feeling of being overwhelmed? It's so real, and it makes complete sense given what you're going through")
-
-HOW YOU RESPOND:
-- Keep responses conversational and flowing - like a caring friend would talk
-- Ask ONE meaningful question at a time to deepen the conversation
-- Show genuine curiosity: "Tell me more about that..." or "What was that like for you?"
-- Reflect back what you hear: "It sounds like you're feeling..."
-- Offer gentle support, not solutions, unless they ask for advice
-- Use phrases like "I'm here with you", "That takes courage to share", "You're not alone in this"
-
-ABSOLUTELY DO NOT:
-- Use any markdown formatting (no #, ##, **, *, -, bullet points, or numbered lists)
-- Write in a clinical or robotic tone
-- Give long lectures or overwhelming amounts of information
-
-SAFETY:
-- If someone mentions self-harm or suicide, respond with deep compassion first, then gently encourage them to reach out to a crisis helpline or professional
-- You're not a replacement for professional help - if things feel serious, lovingly suggest they talk to someone who can provide more support"""
-
+# Kept for backward compatibility — crisis module (1.3) will replace this
 DISTRESS_KEYWORDS = [
     'hopeless', 'worthless', "can't go on", 'end it all', 'give up',
     'no point', 'nobody cares', 'better off without me', 'want to die',
@@ -45,33 +26,123 @@ class AIService:
             timeout=60,
             max_retries=1,
         )
+        default_model = getattr(
+            settings, 'OPENROUTER_MODEL', 'meta-llama/llama-3.1-8b-instruct'
+        )
         if model_key and hasattr(settings, 'OPENROUTER_MODELS'):
             models = getattr(settings, 'OPENROUTER_MODELS', {})
-            self.model = models.get(model_key, {}).get(
-                'id', getattr(settings, 'OPENROUTER_MODEL', 'anthropic/claude-sonnet-4')
-            )
+            self.model = models.get(model_key, {}).get('id', default_model)
         else:
-            self.model = getattr(settings, 'OPENROUTER_MODEL', 'anthropic/claude-sonnet-4')
+            self.model = default_model
 
-    def get_response(self, messages: list, user_message: str) -> str:
-        conversation = [{'role': 'system', 'content': SYSTEM_PROMPT}]
-        conversation.extend([{'role': m['role'], 'content': m['content']} for m in messages])
-        conversation.append({'role': 'user', 'content': user_message})
+    def _retrieve_context(self, user_message: str) -> list[dict] | None:
+        """Retrieve relevant RAG passages for the user's message."""
+        try:
+            retriever = RAGRetriever()
+            passages = retriever.retrieve_from_all(user_message, top_k=5)
+            return passages if passages else None
+        except Exception as e:
+            logger.warning(f"RAG retrieval failed (non-fatal): {e}")
+            return None
+
+    def _get_extra_headers(self) -> dict:
+        return {
+            'HTTP-Referer': getattr(settings, 'SITE_URL', 'http://localhost:3000'),
+            'X-Title': 'MindBridge',
+        }
+
+    def get_response(
+        self,
+        messages: list,
+        user_message: str,
+        retrieved_passages: list[dict] | None = None,
+    ) -> str:
+        """Generate a response using the 4-layer prompt framework.
+
+        Args:
+            messages: Conversation history as list of {'role': ..., 'content': ...}
+            user_message: The user's current message
+            retrieved_passages: Optional RAG passages from FAISS retriever
+        """
+        builder = PromptBuilder(retrieved_passages=retrieved_passages)
+        conversation = builder.build_messages(
+            conversation_history=messages,
+            user_message=user_message,
+        )
 
         response = self.client.chat.completions.create(
             model=self.model,
             max_tokens=1024,
             messages=conversation,
-            extra_headers={
-                'HTTP-Referer': getattr(settings, 'SITE_URL', 'http://localhost:3000'),
-                'X-Title': 'MindBridge',
-            },
+            extra_headers=self._get_extra_headers(),
         )
         return response.choices[0].message.content
+
+    def get_streaming_response(
+        self,
+        messages: list,
+        user_message: str,
+        retrieved_passages: list[dict] | None = None,
+    ):
+        """Generate a streaming response using the 4-layer prompt framework.
+
+        Yields text chunks as they arrive from the LLM.
+        """
+        builder = PromptBuilder(retrieved_passages=retrieved_passages)
+        conversation = builder.build_messages(
+            conversation_history=messages,
+            user_message=user_message,
+        )
+
+        stream = self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=1024,
+            messages=conversation,
+            stream=True,
+            extra_headers=self._get_extra_headers(),
+        )
+        for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
 
     def detect_distress(self, message: str) -> int:
         message_lower = message.lower()
         return min(sum(1 for kw in DISTRESS_KEYWORDS if kw in message_lower), 5)
+
+    TOPIC_TAGS = [
+        'anxiety', 'depression', 'relationships', 'academic_stress', 'grief',
+        'self_esteem', 'sleep', 'burnout', 'loneliness', 'substance_use',
+        'family', 'anger', 'trauma', 'eating_concerns', 'identity',
+    ]
+
+    def classify_topics(self, messages: list) -> list[str]:
+        """Classify conversation topics from message history.
+
+        Called automatically after every 5 messages.
+        """
+        conversation_text = "\n".join([
+            f"{'User' if m['role'] == 'user' else 'AI'}: {m['content'][:150]}"
+            for m in messages[-10:]
+        ])
+        tags_str = ", ".join(self.TOPIC_TAGS)
+        prompt = (
+            f"Analyze this conversation and return a JSON array of relevant topic tags.\n"
+            f"Available tags: {tags_str}\n"
+            f"Return 1-4 tags that best describe the main topics discussed.\n\n"
+            f"Conversation:\n{conversation_text}\n\n"
+            f'Respond with ONLY a JSON array, e.g.: ["anxiety", "academic_stress"]'
+        )
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                max_tokens=100,
+                messages=[{'role': 'user', 'content': prompt}],
+                extra_headers=self._get_extra_headers(),
+            )
+            tags = json.loads(response.choices[0].message.content.strip())
+            return [t for t in tags if t in self.TOPIC_TAGS]
+        except Exception:
+            return []
 
     def analyze_mood(self, message: str) -> dict:
         prompt = (
@@ -80,15 +151,11 @@ class AIService:
             f'Respond with: {{"mood": "anxious|sad|stressed|overwhelmed|calm|happy", "score": 0.0-1.0, "distress_indicators": 0-5}}'
         )
         try:
-            import json
             response = self.client.chat.completions.create(
                 model=self.model,
                 max_tokens=100,
                 messages=[{'role': 'user', 'content': prompt}],
-                extra_headers={
-                    'HTTP-Referer': getattr(settings, 'SITE_URL', 'http://localhost:3000'),
-                    'X-Title': 'MindBridge',
-                },
+                extra_headers=self._get_extra_headers(),
             )
             return json.loads(response.choices[0].message.content.strip())
         except Exception:

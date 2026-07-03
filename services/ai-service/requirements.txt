@@ -12,6 +12,12 @@ PyJWT==2.8.0
 python-json-logger==2.0.7
 gunicorn==21.2.0
 
+# RAG pipeline dependencies
+faiss-cpu==1.8.0
+sentence-transformers==3.0.1
+torch>=2.1.0
+transformers>=4.40.0
+
 # Shared library — installed as editable in dev, from git tag in prod
 # Dev: pip install -e ../../shared/mindbridge-common
 # Prod image: COPY shared/mindbridge-common /shared/mindbridge-common && pip install /shared/mindbridge-common

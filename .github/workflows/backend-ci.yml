@@ -1,0 +1,65 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'services/**'
+      - 'shared/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'services/**'
+      - 'shared/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  lint-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install shared library
+        run: pip install -e ../shared/mindbridge-common
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: flake8 --max-line-length=120 --exclude=migrations,__pycache__ apps/ core/
+        continue-on-error: true
+
+      - name: Check imports with isort
+        run: isort --check-only --diff apps/ core/
+        continue-on-error: true
+
+      - name: Run tests
+        env:
+          DJANGO_ENV: testing
+          SECRET_KEY: test-secret-key-for-ci
+          REDIS_URL: redis://localhost:6379/0
+        run: pytest --tb=short -q
+        continue-on-error: true

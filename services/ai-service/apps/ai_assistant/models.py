@@ -21,6 +21,24 @@ class AISession(BaseModel):
     message_count = models.PositiveIntegerField(default=0)
     total_distress_indicators = models.PositiveIntegerField(default=0)
 
+    # Pre-session mood check-in (2.5)
+    initial_mood = models.CharField(max_length=50, blank=True)
+    initial_mood_score = models.FloatField(null=True, blank=True)
+    mood_checkin_completed = models.BooleanField(default=False)
+
+    # Post-session feedback (2.6)
+    feedback_rating = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Session feedback rating 1-5"
+    )
+    feedback_text = models.TextField(blank=True)
+
+    # Automatic topic tagging (2.7)
+    topic_tags = models.JSONField(
+        default=list, blank=True,
+        help_text="Auto-classified topic tags for this session"
+    )
+
     class Meta:
         db_table = 'ai_sessions'
         ordering = ['-updated_at']
@@ -41,6 +59,17 @@ class AIMessage(BaseModel):
     detected_mood = models.CharField(max_length=50, blank=True)
     mood_score = models.FloatField(null=True, blank=True)
     distress_indicators = models.PositiveIntegerField(default=0)
+    crisis_level = models.CharField(
+        max_length=20,
+        default='normal',
+        choices=[
+            ('normal', 'Normal'),
+            ('mild_distress', 'Mild Distress'),
+            ('moderate_distress', 'Moderate Distress'),
+            ('crisis', 'Crisis'),
+        ],
+    )
+    detected_conditions = models.JSONField(default=list, blank=True)
 
     class Meta:
         db_table = 'ai_messages'

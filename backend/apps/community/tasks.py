@@ -88,3 +88,34 @@ def retry_pending_evaluations():
 
     if count:
         logger.info('Retried %d stuck group evaluations', count)
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=30,
+    queue='celery',
+    acks_late=True,
+)
+def moderate_content_task(self, content_type, content_id, content_text, group_name='General'):
+    """Publish a moderation request event to the AI service.
+
+    The AI service runs the 4-classifier pipeline and publishes the result back.
+    """
+    from mindbridge_common.events import publisher
+
+    try:
+        publisher.publish(
+            event_type='community.content_moderation_requested',
+            payload={
+                'content_type': content_type,
+                'content_id': str(content_id),
+                'content_text': content_text,
+                'group_name': group_name,
+            },
+            service_origin='community-service',
+        )
+        logger.info('Published moderation request for %s %s', content_type, content_id)
+    except Exception as exc:
+        logger.error('Failed to publish moderation request: %s', exc)
+        raise self.retry(exc=exc)
