@@ -42,7 +42,7 @@ export default function MoodCheckinModal({ sessionId: _sessionId, onComplete, on
         </div>
 
         <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-          Take a moment to check in with yourself before we chat. This helps Mira understand where you are right now.
+          Take a moment to check in with yourself before we chat. This helps MindBot understand where you are right now.
         </p>
 
         <div className="grid grid-cols-4 gap-3 mb-6">

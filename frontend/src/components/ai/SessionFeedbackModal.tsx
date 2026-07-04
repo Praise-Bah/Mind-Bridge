@@ -34,7 +34,7 @@ export default function SessionFeedbackModal({ sessionId: _sessionId, onSubmit, 
         </div>
 
         <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-          Your feedback helps us improve Mira and provide better support.
+          Your feedback helps us improve MindBot and provide better support.
         </p>
 
         <div className="flex justify-center gap-2 mb-6">

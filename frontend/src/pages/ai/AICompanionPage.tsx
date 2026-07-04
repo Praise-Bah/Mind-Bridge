@@ -199,7 +199,7 @@ export default function AICompanionPage() {
             </button>
             <AIAvatar size="sm" animated={false} />
             <div>
-              <h1 className="font-semibold">AI Companion</h1>
+              <h1 className="font-semibold">MindBot</h1>
               <p className="text-xs text-muted-foreground">Always here to listen</p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function AICompanionPage() {
             <div className="h-full flex flex-col items-center justify-center p-8 text-center">
               <AIAvatar size="lg" animated />
               <h2 className="mt-6 text-xl font-semibold bg-gradient-to-r from-[#00BFFF] via-[#7C5CBF] to-[#4F46E5] bg-clip-text text-transparent">
-                Hello! I'm your AI Companion
+                Hello! I'm MindBot
               </h2>
               <p className="mt-2 text-muted-foreground max-w-md">
                 I'm here to listen, support, and help you navigate your thoughts and feelings. 

@@ -1,6 +1,6 @@
 """PromptBuilder — assembles the 4-layer prompt engineering framework.
 
-Layer 1: Persona (Mira's identity and style)
+Layer 1: Persona (MindBot's identity and style)
 Layer 2: Safety Guardrails (non-overridable crisis rules)
 Layer 3: RAG Context Injection (retrieved knowledge base passages)
 Layer 4: Few-Shot Examples (conversation templates)
