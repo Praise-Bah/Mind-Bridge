@@ -5,7 +5,7 @@ import { toggleSidebar, setMobileSidebarOpen } from '@/store/slices/uiSlice'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, Users, MessageCircle, Video, Brain,
-  BookOpen, User, Settings, Calendar, Menu, X, Bell, ShieldCheck, Briefcase
+  BookOpen, User, Settings, Calendar, Menu, X, Bell, ShieldCheck, Briefcase, HeartPulse
 } from 'lucide-react'
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { path: '/professionals', icon: Calendar, label: 'Professionals' },
   { path: '/bookings', icon: Calendar, label: 'My Bookings' },
   { path: '/videos', icon: Video, label: 'Videos' },
+  { path: '/wellness', icon: HeartPulse, label: 'Wellness' },
   { path: '/ai-companion', icon: Brain, label: 'AI Companion' },
   { path: '/journal', icon: BookOpen, label: 'Journal' },
   { path: '/notifications', icon: Bell, label: 'Notifications', badge: true },

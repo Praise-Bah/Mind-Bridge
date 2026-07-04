@@ -23,6 +23,7 @@ const ProfessionalsPage = lazy(() => import('./pages/professionals/Professionals
 const ProfessionalDetailPage = lazy(() => import('./pages/professionals/ProfessionalDetailPage'))
 const BookingsPage = lazy(() => import('./pages/professionals/BookingsPage'))
 const VideosPage = lazy(() => import('./pages/videos/VideosPage'))
+const WellnessPage = lazy(() => import('./pages/wellness/WellnessPage'))
 const AICompanionPage = lazy(() => import('./pages/ai/AICompanionPage'))
 const JournalPage = lazy(() => import('./pages/journal/JournalPage'))
 const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'))
@@ -94,6 +95,7 @@ function App() {
             <Route path="/professionals/:id" element={<ProfessionalDetailPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/videos" element={<VideosPage />} />
+            <Route path="/wellness" element={<WellnessPage />} />
             <Route path="/ai-companion" element={<AICompanionPage />} />
             <Route path="/journal" element={<JournalPage />} />
             <Route path="/profile" element={<ProfilePage />} />
