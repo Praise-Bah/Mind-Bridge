@@ -528,13 +528,13 @@ export default function LandingPage() {
               <X size={32} />
             </button>
             <div className="aspect-video bg-gray-900 rounded-2xl overflow-hidden">
-              {/* Replace YOUTUBE_VIDEO_ID with your actual demo video ID, or place demo.mp4 in public/ */}
+              {/* Replace the YouTube ID below with your own MindBridge demo recording */}
               <iframe
                 width="100%"
                 height="100%"
-                src="https://www.youtube.com/embed/9FKzENe9JBs?autoplay=1&rel=0"
+                src="https://www.youtube.com/embed/NQcYZplTXnQ?autoplay=1&rel=0"
                 title="MindBridge Platform Demo"
-                frameBorder="0"
+                style={{ border: 'none' }}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 className="w-full h-full"

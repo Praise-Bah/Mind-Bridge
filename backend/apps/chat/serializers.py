@@ -24,6 +24,11 @@ class MessageSerializer(serializers.ModelSerializer):
                   'created_at']
         read_only_fields = ['id', 'conversation', 'sender', 'is_read', 'read_at', 'created_at']
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['content'] = instance.decrypted_content
+        return data
+
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(
@@ -83,6 +88,11 @@ class GroupChatMessageSerializer(serializers.ModelSerializer):
                   'content', 'message_type', 'attachment', 'is_read', 'read_at',
                   'created_at']
         read_only_fields = ['id', 'conversation', 'sender', 'is_read', 'read_at', 'created_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['content'] = instance.decrypted_content
+        return data
 
     def get_sender_name(self, obj):
         group = getattr(obj.conversation, 'community_group', None)

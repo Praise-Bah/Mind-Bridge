@@ -97,6 +97,6 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         conversation.save()
         return {
             'id': str(message.id),
-            'content': message.content,
+            'content': message.decrypted_content,
             'created_at': message.created_at.isoformat(),
         }
