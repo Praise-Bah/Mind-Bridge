@@ -2,11 +2,11 @@
 
 ## About ICT University
 
-ICT University (ICTU) is a private institution of higher learning located in Yaoundé, the political capital of Cameroon. Founded with a vision to produce world-class technology professionals, the university is dedicated to advancing education in information and communication technology across Central Africa and beyond.
+ICT University (ICTU) is a private institution of higher learning located in Yaounde, the political capital of Cameroon. Founded with a vision to produce world-class technology professionals, the university is dedicated to advancing education in information and communication technology across Central Africa and beyond.
 
 ## Location
 
-The main campus is situated in Yaoundé, Cameroon. Yaoundé is a vibrant city that serves as the administrative hub of the country, offering students access to government institutions, tech startups, and a growing digital economy. The campus is accessible by public transport and is located in a safe, well-connected neighborhood.
+The main campus is situated in Yaounde, Cameroon. Yaounde is a vibrant city that serves as the administrative hub of the country, offering students access to government institutions, tech startups, and a growing digital economy. The campus is accessible by public transport and is located in a safe, well-connected neighborhood.
 
 ## Mission
 
@@ -18,15 +18,20 @@ To be a leading center of excellence in ICT education and research in Africa, pr
 
 ## Programs Offered
 
-ICT University offers undergraduate and postgraduate programs across several technology-focused disciplines:
+ICT University offers six undergraduate (BSc) programs and postgraduate (MSc) programs across technology-focused disciplines:
 
-- **Bachelor of Science in Software Engineering**
-- **Bachelor of Science in Computer Science**
-- **Bachelor of Science in Information Systems**
-- **Bachelor of Science in Networking and Telecommunications**
-- **Master of Science in Information Technology**
-- **Master of Science in Computer Science**
-- **Professional Certificate Programs** in cybersecurity, data science, and cloud computing
+### Undergraduate Programs (BSc)
+- **BSc ICT** - Information & Communication Technology
+- **BSc CS** - Computer Science
+- **BSc SEN** - Software Engineering
+- **BSc CYS** - Cyber Security
+- **BSc ISN** - Information Systems & Networking
+- **BSc AI** - Artificial Intelligence
+
+### Postgraduate Programs (MSc)
+- **MSc in Computer Science**
+- **MSc in Information Technology**
+- **MSc in Software Engineering**
 
 ## Accreditation
 
@@ -43,3 +48,11 @@ ICT University is accredited by the Ministry of Higher Education of Cameroon. Th
 ## Language of Instruction
 
 Courses are delivered primarily in English, with some programs and support services available in French, reflecting the bilingual nature of Cameroon.
+
+## Academic Structure
+
+The academic year is divided into two main semesters:
+- **Fall Semester**: September to December
+- **Summer Semester**: May to August
+
+An optional intersession period is available for students who wish to take additional courses or make up credits.

@@ -7,12 +7,19 @@ from .encryption import encrypt_message, decrypt_message
 class Conversation(BaseModel):
     """Chat conversation between users."""
     participants = models.ManyToManyField(
-        settings.AUTH_USER_MODEL, 
+        settings.AUTH_USER_MODEL,
         related_name='conversations'
     )
     is_group = models.BooleanField(default=False)
     name = models.CharField(max_length=100, blank=True)
     last_message_at = models.DateTimeField(null=True, blank=True)
+    community_group = models.OneToOneField(
+        'community.CommunityGroup',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='conversation',
+    )
 
     class Meta:
         db_table = 'conversations'

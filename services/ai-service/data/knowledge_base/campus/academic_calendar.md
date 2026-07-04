@@ -2,9 +2,9 @@
 
 ## Academic Year Structure
 
-The academic year at ICT University is divided into two main semesters, with an optional summer session for students who wish to take additional courses or make up credits.
+The academic year at ICT University is divided into two main semesters: the Fall Semester and the Summer Semester. An optional intersession period is available for students who wish to take additional courses or make up credits.
 
-## First Semester (September - January)
+## Fall Semester (September - December)
 
 | Period | Dates |
 |---|---|
@@ -13,28 +13,26 @@ The academic year at ICT University is divided into two main semesters, with an 
 | Add/Drop Deadline | End of September |
 | Midterm Examinations | Late October to Early November |
 | Mid-Semester Break | One week in November |
-| Last Day of Classes | Mid-December |
-| Revision Period | Third week of December |
-| Final Examinations | Late December to Early January |
-| Semester Break | Mid-January to Early February |
+| Last Day of Classes | Early December |
+| Revision Period | Second week of December |
+| Final Examinations | Mid to Late December |
 
-## Second Semester (February - June)
+## Summer Semester (May - August)
 
 | Period | Dates |
 |---|---|
-| Registration for Returning Students | Late January |
-| Classes Begin | Early February (around February 5) |
-| Add/Drop Deadline | Mid-February |
-| Midterm Examinations | Late March to Early April |
-| Easter Break | One week (dates vary by year) |
-| Last Day of Classes | Late May |
-| Revision Period | First week of June |
-| Final Examinations | Mid-June |
-| End of Academic Year | Late June |
+| Registration | Late April to Early May |
+| Classes Begin | Early May (around May 5) |
+| Add/Drop Deadline | Mid-May |
+| Midterm Examinations | Late June |
+| Last Day of Classes | Late July |
+| Revision Period | First week of August |
+| Final Examinations | Mid-August |
+| End of Semester | Late August |
 
-## Summer Session (July - August)
+## Intersession Period (January - April)
 
-An optional summer session runs from early July through mid-August. This session is available for students who need to retake courses, earn extra credits, or complete professional certificate modules. Summer session courses are typically condensed and run for six weeks.
+An optional intersession period runs from January through April. This session is available for students who need to retake courses, earn extra credits, or complete professional certificate modules. Intersession courses are typically condensed.
 
 ## Key Holidays and Closures
 
@@ -51,9 +49,9 @@ The university observes the following public holidays and does not hold classes 
 
 - **Scholarship applications**: Due by September 1 for the upcoming academic year
 - **Internship registration**: Must be finalized by the end of the first month of each semester
-- **Thesis proposal submission** (postgraduate): Due by the end of the first semester
+- **Thesis proposal submission** (postgraduate): Due by the end of the fall semester
 - **Graduation application**: Must be submitted at least two months before the graduation ceremony
 
 ## Graduation Ceremony
 
-The annual graduation ceremony is held in July. Graduating students must clear all financial obligations and complete all academic requirements before being eligible to participate. Invitations and details are communicated through the Registrar's Office.
+The annual graduation ceremony is typically held between semesters. Graduating students must clear all financial obligations and complete all academic requirements before being eligible to participate. Invitations and details are communicated through the Registrar's Office.

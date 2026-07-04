@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CheckCheck, Loader2, Mail, Settings, MessageCircle, Calendar, Heart, AtSign, User, Brain } from 'lucide-react'
+import { Bell, CheckCheck, Loader2, Mail, Settings, MessageCircle, Calendar, Heart, AtSign, User, Brain, BookOpen } from 'lucide-react'
 import { RootState } from '@/store'
 import { setNotifications, markAllAsRead, setUnreadCount } from '@/store/slices/notificationSlice'
 import { notificationService } from '@/services/notificationService'
@@ -192,6 +192,10 @@ export default function NotificationsPage() {
           <div className="flex items-center gap-2">
             <Bell size={14} className="text-gray-400" />
             <span className="text-gray-300">System updates</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <BookOpen size={14} className="text-amber-300" />
+            <span className="text-gray-300">Daily biblical verses</span>
           </div>
         </div>
       </div>

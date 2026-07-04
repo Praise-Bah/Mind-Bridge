@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
-import { X, Check, ExternalLink, MessageCircle, Calendar, Heart, AtSign, Bell, Brain, User } from 'lucide-react'
+import { X, Check, ExternalLink, MessageCircle, Calendar, Heart, AtSign, Bell, Brain, User, BookOpen } from 'lucide-react'
 import type { Notification } from '@/types'
 import { markAsRead, removeNotification, setUnreadCount } from '@/store/slices/notificationSlice'
 import { notificationService } from '@/services/notificationService'
@@ -19,6 +19,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   checkin:           <Bell size={15} className="text-amber-400" />,
   ai_summary:        <Brain size={15} className="text-violet-400" />,
   system:            <Bell size={15} className="text-gray-400" />,
+  daily_verse:       <BookOpen size={15} className="text-amber-300" />,
 }
 
 const SOURCE_ROUTES: Record<string, (data: Record<string, unknown>) => string> = {
@@ -34,6 +35,7 @@ const SOURCE_ROUTES: Record<string, (data: Record<string, unknown>) => string> =
   checkin:           _d => '/journal',
   ai_summary:        _d => '/ai-companion',
   system:            _d => '/notifications',
+  daily_verse:       _d => '/notifications',
 }
 
 interface Props {

@@ -182,10 +182,16 @@ CELERY_TASK_QUEUES = {
 }
 CELERY_TASK_DEFAULT_QUEUE = 'celery'
 # Retry pending AI group evaluations every 5 minutes
+from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
     'retry-pending-group-evaluations': {
         'task': 'apps.community.tasks.retry_pending_evaluations',
         'schedule': 300,  # every 5 minutes
+    },
+    'send-daily-biblical-verse': {
+        'task': 'apps.notifications.tasks.send_daily_biblical_verse',
+        'schedule': crontab(hour=7, minute=0),  # daily at 7:00 AM UTC
     },
 }
 

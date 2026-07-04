@@ -2,8 +2,9 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from .serializers import ConversationSerializer, MessageSerializer, GroupChatMessageSerializer
 
 
 class ConversationListCreateView(generics.ListCreateAPIView):
@@ -114,3 +115,51 @@ class MarkMessagesReadView(APIView):
             read_at=timezone.now()
         )
         return Response({'status': 'messages marked as read'})
+
+
+class GroupChatView(APIView):
+    """Get or create the chat conversation for a community group."""
+
+    def get(self, request, slug):
+        from apps.community.models import CommunityGroup, GroupMembership
+        group = get_object_or_404(CommunityGroup, slug=slug, is_active=True)
+
+        if not GroupMembership.objects.filter(user=request.user, group=group).exists():
+            return Response({'detail': 'You must be a member of this group.'}, status=status.HTTP_403_FORBIDDEN)
+
+        conversation, created = Conversation.objects.get_or_create(
+            community_group=group,
+            defaults={'is_group': True, 'name': group.name, 'last_message_at': timezone.now()},
+        )
+        if created:
+            conversation.participants.add(request.user)
+        elif not conversation.participants.filter(id=request.user.id).exists():
+            conversation.participants.add(request.user)
+
+        return Response({
+            'conversation_id': str(conversation.id),
+            'group_name': group.name,
+            'group_slug': group.slug,
+        })
+
+
+class GroupChatMessagesView(generics.ListCreateAPIView):
+    """List and send messages in a community group chat with anonymous names."""
+    serializer_class = GroupChatMessageSerializer
+
+    def get_queryset(self):
+        slug = self.kwargs['slug']
+        return Message.objects.filter(
+            conversation__community_group__slug=slug,
+            conversation__participants=self.request.user,
+            is_deleted=False,
+        ).select_related('sender', 'conversation__community_group')
+
+    def perform_create(self, serializer):
+        from apps.community.models import CommunityGroup
+        slug = self.kwargs['slug']
+        group = get_object_or_404(CommunityGroup, slug=slug)
+        conversation = get_object_or_404(Conversation, community_group=group)
+        serializer.save(sender=self.request.user, conversation=conversation)
+        conversation.last_message_at = timezone.now()
+        conversation.save()

@@ -2,7 +2,7 @@
 
 ## Main Campus
 
-- **Address**: ICT University, Yaoundé, Cameroon
+- **Address**: ICT University, Yaounde, Cameroon
 - **General Enquiries Phone**: +237 222 000 000
 - **General Email**: info@ictuniversity.edu.cm
 - **Website**: www.ictuniversity.edu.cm
@@ -38,24 +38,45 @@
 ## Academic Departments
 
 ### Department of Software Engineering
-- **Head of Department Email**: hod.se@ictuniversity.edu.cm
+- **Head of Department**: Dr. Djomadji Eric
+- **Email**: hod.sen@ictuniversity.edu.cm
 - **Department Phone**: +237 222 000 010
 - **Location**: Academic Block B, Second Floor
+- **Faculty**: Mr. Fondze Nfor, Mr. Nkemeni Peter, Mr. Tamunjoh Emmanuel
 
 ### Department of Computer Science
-- **Head of Department Email**: hod.cs@ictuniversity.edu.cm
+- **Head of Department**: Dr. Nkandeu Pascal
+- **Email**: hod.cs@ictuniversity.edu.cm
 - **Department Phone**: +237 222 000 011
 - **Location**: Academic Block B, Third Floor
+- **Faculty**: Dr. Tchangai Martial, Dr. Fouda Jean, Mr. Nsom Calvin
 
-### Department of Information Technology and Information Systems
-- **Head of Department Email**: hod.it@ictuniversity.edu.cm
+### Department of Cyber Security
+- **Head of Department**: Dr. Assontia Tazinkeng Norbert
+- **Email**: hod.cys@ictuniversity.edu.cm
 - **Department Phone**: +237 222 000 012
 - **Location**: Academic Block C, First Floor
+- **Faculty**: Mr. Ambe Sinclair, Mr. Ngbeken Elvis
 
-### Department of Networking and Telecommunications
-- **Head of Department Email**: hod.net@ictuniversity.edu.cm
+### Department of Information Systems & Networking
+- **Head of Department**: Dr. Ngatchu Crespin
+- **Email**: hod.isn@ictuniversity.edu.cm
 - **Department Phone**: +237 222 000 013
 - **Location**: Academic Block C, Second Floor
+- **Faculty**: Mr. Tassang Abner, Mr. Nsong Godlove, Mr. Ndichia Gilbert
+
+### Department of Artificial Intelligence
+- **Head of Department**: Dr. Yaya Hamidou
+- **Email**: hod.ai@ictuniversity.edu.cm
+- **Department Phone**: +237 222 000 014
+- **Location**: Academic Block B, First Floor
+- **Faculty**: Mr. Awa Terence
+
+### Mathematics and General Studies
+- **Coordinator**: Ms. Koussoumna Aimee
+- **Email**: maths@ictuniversity.edu.cm
+- **Department Phone**: +237 222 000 015
+- **Faculty**: Ms. Ndagire Loren, Ms. Atemnkeng Bridget
 
 ## Student Support Services
 
@@ -99,4 +120,4 @@
 - **Police (National)**: 117
 - **Mental Health Crisis (MindBridge)**: Available 24/7 via the MindBridge app or website
 
-All phone numbers and email addresses listed above are placeholder values. Students should verify current contact details through the university website or the student information portal.
+Note: Some phone numbers and email addresses listed above are representative values. Students should verify current contact details through the university website or the student information portal.

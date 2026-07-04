@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { 
-  User, Bell, Shield, Palette, Monitor, AlertTriangle, 
-  Moon, Sun, Laptop, Eye, Mail, MessageSquare
+  User, Bell, Shield, Palette, Monitor, AlertTriangle,
+  Moon, Sun, Laptop, Eye, Mail, MessageSquare, BookOpen
 } from 'lucide-react'
 import { RootState } from '@/store'
 import { logout } from '@/store/slices/authSlice'
@@ -47,7 +47,8 @@ export default function SettingsPage() {
   const [notificationData, setNotificationData] = useState({
     daily_notification_time: (user as any)?.daily_notification_time || '09:00',
     email_notifications_enabled: (user as any)?.email_notifications_enabled !== false,
-    push_notifications_enabled: (user as any)?.push_notifications_enabled !== false
+    push_notifications_enabled: (user as any)?.push_notifications_enabled !== false,
+    push_daily_verse: (user as any)?.push_daily_verse !== false
   })
 
   const handleSave = async (section: string, data: any) => {
@@ -360,6 +361,22 @@ export default function SettingsPage() {
                         type="checkbox"
                         checked={notificationData.push_notifications_enabled}
                         onChange={(e) => setNotificationData({...notificationData, push_notifications_enabled: e.target.checked})}
+                        className="w-5 h-5 rounded"
+                      />
+                    </label>
+
+                    <label className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <BookOpen size={18} className="text-amber-300" />
+                        <div>
+                          <span className="text-gray-300">Daily biblical verses</span>
+                          <p className="text-xs text-gray-500">Receive an encouraging verse each morning at 7:00 AM</p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={notificationData.push_daily_verse}
+                        onChange={(e) => setNotificationData({...notificationData, push_daily_verse: e.target.checked})}
                         className="w-5 h-5 rounded"
                       />
                     </label>

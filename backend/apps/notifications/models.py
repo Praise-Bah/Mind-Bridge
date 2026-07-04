@@ -18,6 +18,7 @@ class Notification(BaseModel):
         ('checkin', 'Daily Check-In Prompt'),
         ('ai_summary', 'AI Session Summary'),
         ('system', 'System Notification'),
+        ('daily_verse', 'Daily Biblical Verse'),
         ('group_approved', 'Group Approved'),
         ('group_rejected', 'Group Rejected'),
         ('group_review_required', 'Group Requires Review'),
@@ -57,6 +58,7 @@ class NotificationPreference(BaseModel):
     push_booking = models.BooleanField(default=True)
     push_reminder = models.BooleanField(default=True)
     push_community = models.BooleanField(default=True)
+    push_daily_verse = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'notification_preferences'

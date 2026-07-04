@@ -2,6 +2,7 @@ from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -38,3 +39,47 @@ def send_session_reminder(booking_id):
         message=f'Your session with {booking.professional.user.get_full_name()} is coming up.',
         data={'booking_id': str(booking.id)},
     )
+
+
+@shared_task
+def send_daily_biblical_verse():
+    """Send a daily biblical verse notification to all active users.
+
+    The verse is selected deterministically based on the day of the year,
+    so every user receives the same verse on a given day.
+    """
+    from apps.notifications.verses import BIBLICAL_VERSES
+    from apps.notifications.models import Notification, NotificationPreference
+    from apps.notifications.publisher import publish_notification
+
+    day_of_year = timezone.now().timetuple().tm_yday
+    verse = BIBLICAL_VERSES[day_of_year % len(BIBLICAL_VERSES)]
+
+    title = f"Daily Verse: {verse['reference']}"
+    message = f"{verse['text']}\n\n{verse['reflection']}"
+    data = {
+        'verse_reference': verse['reference'],
+        'verse_text': verse['text'],
+        'reflection': verse['reflection'],
+        'sender_name': 'MindBot',
+    }
+
+    # Get users who have opted out of daily verse notifications
+    opted_out_user_ids = set(
+        NotificationPreference.objects.filter(
+            push_daily_verse=False,
+        ).values_list('user_id', flat=True)
+    )
+
+    active_users = User.objects.filter(is_active=True).only('id')
+
+    for user in active_users:
+        if user.id in opted_out_user_ids:
+            continue
+        publish_notification(
+            user_id=user.id,
+            notification_type='daily_verse',
+            title=title,
+            message=message,
+            data=data,
+        )

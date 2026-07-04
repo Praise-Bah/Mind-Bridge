@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Users, PlusCircle, Loader2, LogIn, LogOut, Lock } from 'lucide-react'
+import { ArrowLeft, Users, PlusCircle, Loader2, LogIn, LogOut, Lock, MessageCircle, FileText } from 'lucide-react'
 import type { Post, CommunityGroup, Comment } from '@/types'
 import { communityService } from '@/services/communityService'
 import PostCard from '@/components/community/PostCard'
@@ -8,6 +8,7 @@ import PostCreationModal from '@/components/community/PostCreationModal'
 import CommentThread from '@/components/community/CommentThread'
 import ReportModal from '@/components/community/ReportModal'
 import ShareToJournalModal from '@/components/community/ShareToJournalModal'
+import GroupChat from '@/components/community/GroupChat'
 
 type ReportTarget = { type: 'post' | 'comment'; id: string } | null
 
@@ -20,6 +21,7 @@ export default function GroupDetailPage() {
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
 
+  const [activeTab, setActiveTab] = useState<'posts' | 'chat'>('posts')
   const [showCreate, setShowCreate] = useState(false)
   const [openCommentPost, setOpenCommentPost] = useState<Post | null>(null)
   const [comments, setComments] = useState<Comment[]>([])
@@ -174,60 +176,40 @@ export default function GroupDetailPage() {
         </div>
       </div>
 
-      {/* Pinned post */}
-      {pinnedPost && (
-        <PostCard
-          post={pinnedPost}
-          isModerator={group.is_moderator}
-          onOpenComments={openComments}
-          onShare={() => {}}
-          onReport={p => setReportTarget({ type: 'post', id: p.id })}
-          onSaveToJournal={setJournalPost}
-          onUpdate={updatePost}
-        />
-      )}
-
-      {/* Non-member call-to-action banner */}
-      {!group.is_member && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/3 border border-white/10 text-sm">
-          {group.visibility === 'private' ? (
-            <>
-              <Lock size={15} className="text-gray-500 shrink-0" />
-              <p className="text-gray-400">
-                This is a private group. Ask a member for an invite link to join and post.
-              </p>
-            </>
-          ) : (
-            <>
-              <LogIn size={15} className="text-indigo-400 shrink-0" />
-              <p className="text-gray-400">
-                <button onClick={handleToggleMembership} disabled={joining}
-                  className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 disabled:opacity-50">
-                  Join this group
-                </button>
-                {' '}to post, comment, and react.
-              </p>
-            </>
-          )}
+      {/* Tabs — Posts / Chat */}
+      {group.is_member && (
+        <div className="flex bg-[#1a1a2e] border border-white/10 rounded-xl p-1">
+          <button
+            onClick={() => setActiveTab('posts')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'posts' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <FileText size={15} /> Posts
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'chat' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <MessageCircle size={15} /> Group Chat
+          </button>
         </div>
       )}
 
-      {/* Posts feed — visible to everyone */}
-      {feedPosts.length === 0 ? (
-        <div className="text-center py-12 bg-white/3 rounded-2xl border border-white/10">
-          <p className="text-gray-400">No posts yet</p>
-          {group.is_member && (
-            <button onClick={() => setShowCreate(true)} className="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm hover:bg-indigo-500 transition-colors">
-              Be the first to post
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {feedPosts.map(post => (
+      {/* Chat tab */}
+      {activeTab === 'chat' && group.is_member && (
+        <GroupChat groupSlug={group.slug} groupName={group.name} />
+      )}
+
+      {/* Posts tab */}
+      {activeTab === 'posts' && (
+        <>
+          {/* Pinned post */}
+          {pinnedPost && (
             <PostCard
-              key={post.id}
-              post={post}
+              post={pinnedPost}
               isModerator={group.is_moderator}
               onOpenComments={openComments}
               onShare={() => {}}
@@ -235,8 +217,60 @@ export default function GroupDetailPage() {
               onSaveToJournal={setJournalPost}
               onUpdate={updatePost}
             />
-          ))}
-        </div>
+          )}
+
+          {/* Non-member call-to-action banner */}
+          {!group.is_member && (
+            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/3 border border-white/10 text-sm">
+              {group.visibility === 'private' ? (
+                <>
+                  <Lock size={15} className="text-gray-500 shrink-0" />
+                  <p className="text-gray-400">
+                    This is a private group. Ask a member for an invite link to join and post.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <LogIn size={15} className="text-indigo-400 shrink-0" />
+                  <p className="text-gray-400">
+                    <button onClick={handleToggleMembership} disabled={joining}
+                      className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 disabled:opacity-50">
+                      Join this group
+                    </button>
+                    {' '}to post, comment, and react.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Posts feed — visible to everyone */}
+          {feedPosts.length === 0 ? (
+            <div className="text-center py-12 bg-white/3 rounded-2xl border border-white/10">
+              <p className="text-gray-400">No posts yet</p>
+              {group.is_member && (
+                <button onClick={() => setShowCreate(true)} className="mt-3 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm hover:bg-indigo-500 transition-colors">
+                  Be the first to post
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {feedPosts.map(post => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  isModerator={group.is_moderator}
+                  onOpenComments={openComments}
+                  onShare={() => {}}
+                  onReport={p => setReportTarget({ type: 'post', id: p.id })}
+                  onSaveToJournal={setJournalPost}
+                  onUpdate={updatePost}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Comments drawer */}

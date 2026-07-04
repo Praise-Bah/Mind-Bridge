@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Conversation, Message
+from apps.community.anonymous import generate_anonymous_name
 
 User = get_user_model()
 
@@ -69,3 +70,28 @@ class ConversationSerializer(serializers.ModelSerializer):
         if not request:
             return 0
         return obj.messages.filter(is_deleted=False, is_read=False).exclude(sender=request.user).count()
+
+
+class GroupChatMessageSerializer(serializers.ModelSerializer):
+    """Message serializer that uses anonymous pseudonyms for community group chats."""
+    sender_name = serializers.SerializerMethodField()
+    sender_avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Message
+        fields = ['id', 'conversation', 'sender', 'sender_name', 'sender_avatar',
+                  'content', 'message_type', 'attachment', 'is_read', 'read_at',
+                  'created_at']
+        read_only_fields = ['id', 'conversation', 'sender', 'is_read', 'read_at', 'created_at']
+
+    def get_sender_name(self, obj):
+        group = getattr(obj.conversation, 'community_group', None)
+        if group:
+            return generate_anonymous_name(str(obj.sender_id), str(group.id))
+        return obj.sender.username
+
+    def get_sender_avatar(self, obj):
+        group = getattr(obj.conversation, 'community_group', None)
+        if group:
+            return None
+        return obj.sender.avatar.url if obj.sender.avatar else None

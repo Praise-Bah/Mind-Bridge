@@ -1,5 +1,5 @@
 import api from './api'
-import type { CommunityGroup, Post, Comment } from '@/types'
+import type { CommunityGroup, Post, Comment, Message } from '@/types'
 
 export const communityService = {
   async getGroups(): Promise<CommunityGroup[]> {
@@ -128,6 +128,21 @@ export const communityService = {
     is_approved: boolean
   }> {
     const response = await api.get(`/community/groups/${groupId}/review-status/`)
+    return response.data
+  },
+
+  async getGroupChat(slug: string): Promise<{ conversation_id: string; group_name: string; group_slug: string }> {
+    const response = await api.get(`/chat/group/${slug}/`)
+    return response.data
+  },
+
+  async getGroupChatMessages(slug: string): Promise<Message[]> {
+    const response = await api.get(`/chat/group/${slug}/messages/`)
+    return response.data.results || response.data
+  },
+
+  async sendGroupChatMessage(slug: string, content: string): Promise<Message> {
+    const response = await api.post(`/chat/group/${slug}/messages/`, { content })
     return response.data
   },
 }
