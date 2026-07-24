@@ -12,14 +12,14 @@
 - name: Validate required secret variables
   ansible.builtin.assert:
     that:
-      - mindbridge_postgres_password | length > 0
-      - mindbridge_auth_secret_key | length > 0
-      - mindbridge_internal_service_token | length > 0
-      - mindbridge_google_client_id | length > 0
-      - mindbridge_google_client_secret | length > 0
-      - mindbridge_sendgrid_api_key | length > 0
-      - mindbridge_openrouter_api_key | length > 0
-      - mindbridge_youtube_api_key | length > 0
+      - (mindbridge_postgres_password | string | length) > 0
+      - (mindbridge_auth_secret_key | string | length) > 0
+      - (mindbridge_internal_service_token | string | length) > 0
+      - (mindbridge_google_client_id | string | length) > 0
+      - (mindbridge_google_client_secret | string | length) > 0
+      - (mindbridge_sendgrid_api_key | string | length) > 0
+      - (mindbridge_openrouter_api_key | string | length) > 0
+      - (mindbridge_youtube_api_key | string | length) > 0
     fail_msg: "Create inventory/production/group_vars/vault.yml from vault.yml.example and fill in the required secrets."
   no_log: true
 
