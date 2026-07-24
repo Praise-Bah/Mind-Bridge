@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-service
+spec:
+  replicas: 1
+  template:
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: admin-service
+          # auth + content live in k3s (in-cluster service DNS is fine).
+          # community/professionals/chat live only in Compose, so they are
+          # reached over the bridge gateway. Those ports must be published for
+          # the corresponding admin features to work in staging.
+          env:
+            - name: REDIS_EVENT_BUS_URL
+              value: "redis://172.17.0.1:6379/3"
+            - name: COMMUNITY_SERVICE_INTERNAL_URL
+              value: "http://172.17.0.1:8003"
+            - name: PROFESSIONALS_SERVICE_INTERNAL_URL
+              value: "http://172.17.0.1:8004"
+            - name: CHAT_SERVICE_INTERNAL_URL
+              value: "http://172.17.0.1:8002"

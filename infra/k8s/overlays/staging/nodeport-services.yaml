@@ -1,0 +1,49 @@
+# NodePort services for staging validation only. The base ClusterIP services are
+# kept for in-cluster DNS (admin-service -> auth-service/content-service).
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service-nodeport
+  labels:
+    app: auth-service
+spec:
+  type: NodePort
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+      nodePort: 30001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-service-nodeport
+  labels:
+    app: content-service
+spec:
+  type: NodePort
+  selector:
+    app: content-service
+  ports:
+    - name: http
+      port: 8007
+      targetPort: 8007
+      nodePort: 30007
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-service-nodeport
+  labels:
+    app: admin-service
+spec:
+  type: NodePort
+  selector:
+    app: admin-service
+  ports:
+    - name: http
+      port: 8008
+      targetPort: 8008
+      nodePort: 30008

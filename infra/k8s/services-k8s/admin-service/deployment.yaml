@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-service
+  namespace: mindbridge
+  labels:
+    app: admin-service
+    tier: backend
+spec:
+  # Stateless aggregator, low traffic — no HPA (see services-k8s/README.md).
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-service
+  template:
+    metadata:
+      labels:
+        app: admin-service
+    spec:
+      containers:
+        - name: admin-service
+          image: mindbridge/admin-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8008
+          command:
+            - gunicorn
+            - core.wsgi:application
+            - --bind=0.0.0.0:8008
+            - --workers=1
+            - --threads=2
+            - --max-requests=1000
+            - --timeout=30
+            - --access-logfile=-
+          envFrom:
+            - configMapRef:
+                name: common-env
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: SERVICE_NAME
+              value: admin-service
+            # Admin has no database (DATABASES = {}); it aggregates other
+            # services over HTTP. In-cluster defaults below; the staging overlay
+            # overrides the Compose-only services to the bridge gateway.
+            - name: AUTH_SERVICE_INTERNAL_URL
+              value: http://auth-service:8001
+            - name: CONTENT_SERVICE_INTERNAL_URL
+              value: http://content-service:8007
+            - name: COMMUNITY_SERVICE_INTERNAL_URL
+              value: http://community-service:8003
+            - name: PROFESSIONALS_SERVICE_INTERNAL_URL
+              value: http://professionals-service:8004
+            - name: CHAT_SERVICE_INTERNAL_URL
+              value: http://chat-service:8002
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/
+              port: 8008
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/
+              port: 8008
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30

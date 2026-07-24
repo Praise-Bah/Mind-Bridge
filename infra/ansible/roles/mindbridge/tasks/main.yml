@@ -1,0 +1,111 @@
+---
+- name: Validate deploy inputs
+  ansible.builtin.assert:
+    that:
+      - mindbridge_repo_url is defined
+      - mindbridge_repo_url | length > 0
+      - not (mindbridge_repo_url is search('YOUR_ORG'))
+      - mindbridge_api_domain is defined
+      - mindbridge_api_domain | length > 0
+    fail_msg: "Set mindbridge_repo_url and mindbridge_api_domain in inventory before deploying."
+
+- name: Validate required secret variables
+  ansible.builtin.assert:
+    that:
+      - mindbridge_postgres_password | length > 0
+      - mindbridge_auth_secret_key | length > 0
+      - mindbridge_internal_service_token | length > 0
+      - mindbridge_google_client_id | length > 0
+      - mindbridge_google_client_secret | length > 0
+      - mindbridge_sendgrid_api_key | length > 0
+      - mindbridge_openrouter_api_key | length > 0
+      - mindbridge_youtube_api_key | length > 0
+    fail_msg: "Create inventory/production/group_vars/vault.yml from vault.yml.example and fill in the required secrets."
+  no_log: true
+
+- name: Ensure deployment directory exists
+  ansible.builtin.file:
+    path: "{{ mindbridge_deploy_path }}"
+    state: directory
+    owner: "{{ mindbridge_repo_owner }}"
+    group: "{{ mindbridge_repo_owner }}"
+    mode: "0755"
+
+- name: Clone or update MindBridge repository
+  ansible.builtin.git:
+    repo: "{{ mindbridge_repo_url }}"
+    dest: "{{ mindbridge_deploy_path }}"
+    version: "{{ mindbridge_repo_version }}"
+    update: true
+    force: "{{ mindbridge_git_force }}"
+    accept_hostkey: true
+  become_user: "{{ mindbridge_repo_owner }}"
+
+- name: Render production environment file
+  ansible.builtin.template:
+    src: .env.prod.j2
+    dest: "{{ mindbridge_deploy_path }}/infra/docker/.env.prod"
+    owner: "{{ mindbridge_repo_owner }}"
+    group: "{{ mindbridge_repo_owner }}"
+    mode: "0600"
+  no_log: true
+
+- name: Adapt production Nginx domain in the checked-out repo
+  ansible.builtin.replace:
+    path: "{{ mindbridge_deploy_path }}/infra/nginx/nginx.prod.conf"
+    regexp: "api\\.mindbridge\\.sbs"
+    replace: "{{ mindbridge_api_domain }}"
+    backup: true
+  when: mindbridge_api_domain != "api.mindbridge.sbs"
+
+- name: Check for frontend package lock
+  ansible.builtin.stat:
+    path: "{{ mindbridge_deploy_path }}/frontend/package-lock.json"
+  register: mindbridge_frontend_lock
+  when: mindbridge_build_frontend | bool
+
+- name: Install frontend dependencies with npm ci
+  ansible.builtin.command: npm ci
+  args:
+    chdir: "{{ mindbridge_deploy_path }}/frontend"
+  when:
+    - mindbridge_build_frontend | bool
+    - mindbridge_frontend_lock.stat.exists | default(false)
+
+- name: Install frontend dependencies without a lockfile
+  ansible.builtin.command: npm install
+  args:
+    chdir: "{{ mindbridge_deploy_path }}/frontend"
+  when:
+    - mindbridge_build_frontend | bool
+    - not (mindbridge_frontend_lock.stat.exists | default(false))
+
+- name: Build frontend assets for containerized Nginx
+  ansible.builtin.command: npm run build
+  args:
+    chdir: "{{ mindbridge_deploy_path }}/frontend"
+  when: mindbridge_build_frontend | bool
+
+- name: Start or update production Docker Compose stack
+  ansible.builtin.command: >
+    docker compose -f docker-compose.prod.yml
+    --env-file .env.prod
+    up --build -d --remove-orphans
+  args:
+    chdir: "{{ mindbridge_deploy_path }}/infra/docker"
+
+- name: Show Docker Compose service status
+  ansible.builtin.command: docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+  args:
+    chdir: "{{ mindbridge_deploy_path }}/infra/docker"
+  changed_when: false
+
+- name: Wait for gateway health endpoint
+  ansible.builtin.uri:
+    url: http://127.0.0.1/health/
+    status_code: 200
+  register: mindbridge_gateway_health
+  retries: 12
+  delay: 10
+  until: mindbridge_gateway_health.status == 200
+  when: mindbridge_check_gateway | bool

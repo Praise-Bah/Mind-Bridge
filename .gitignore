@@ -4,6 +4,11 @@
 .env.*.local
 .env.prod
 infra/scripts/health_check_alert.env
+infra/ansible/**/vault.yml
+infra/ansible/**/.vault-pass*
+infra/k8s/overlays/**/staging-secrets.env
+kubeconfig
+*.kubeconfig
 # Allow frontend dev overrides (contains no secrets, only dev flags)
 
 

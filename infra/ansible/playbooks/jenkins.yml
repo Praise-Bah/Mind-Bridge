@@ -1,0 +1,6 @@
+---
+- name: Provision Jenkins CI/CD on the MindBridge VPS
+  hosts: mindbridge
+  become: true
+  roles:
+    - jenkins

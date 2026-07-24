@@ -1,0 +1,67 @@
+# Non-secret production variables for the MindBridge VPS deployment.
+# Copy this inventory directory for staging and override values there.
+
+mindbridge_project_name: MindBridge
+
+# Git source used on the VPS. Use an SSH URL if the repo is private and install
+# a deploy key for the remote user before running the deploy playbook.
+mindbridge_repo_url: "git@github.com:YOUR_ORG/Mind-Bridge.git"
+mindbridge_repo_version: main
+mindbridge_git_force: false
+
+# The existing health-check docs already assume /opt/Mind-Bridge.
+mindbridge_deploy_path: /opt/Mind-Bridge
+mindbridge_create_deploy_user: true
+mindbridge_deploy_user: deploy
+mindbridge_repo_owner: "{{ mindbridge_deploy_user }}"
+
+# Public URLs/domains. The deploy role replaces the current hard-coded
+# api.mindbridge.sbs references in infra/nginx/nginx.prod.conf on the VPS.
+mindbridge_api_domain: api.mindbridge.sbs
+mindbridge_site_url: "https://{{ mindbridge_api_domain }}"
+mindbridge_frontend_url: "https://your-vercel-app.vercel.app"
+mindbridge_allowed_hosts: "{{ mindbridge_api_domain }},localhost,127.0.0.1"
+mindbridge_default_from_email: "noreply@{{ mindbridge_api_domain }}"
+
+# The production Nginx container mounts /etc/letsencrypt. Keep SSL enabled for
+# the current docker-compose.prod.yml unless you intentionally change Nginx.
+mindbridge_enable_ssl: true
+mindbridge_ssl_email: ops@example.com
+
+# Host firewall. Add a custom SSH port here before enabling UFW on a VPS that
+# does not use port 22.
+mindbridge_enable_firewall: true
+mindbridge_ssh_port: 22
+
+# Frontend build strategy:
+# - false: frontend is hosted elsewhere, usually Vercel.
+# - true: install Node.js 20 and build frontend/dist on the VPS for Nginx.
+mindbridge_build_frontend: false
+mindbridge_install_node: "{{ mindbridge_build_frontend }}"
+
+# Optional gateway/service alert cron using infra/scripts/health_check_alert.sh.
+mindbridge_enable_health_cron: false
+mindbridge_health_alert_to: praisebah@gmail.com
+mindbridge_health_alert_from: "noreply@{{ mindbridge_api_domain }}"
+
+# Optional post-deploy canary through the Nginx container.
+mindbridge_check_gateway: true
+
+# Non-secret app values.
+mindbridge_postgres_user: mindbridge
+mindbridge_sentry_environment: production
+
+# Secret values come from group_vars/vault.yml, which should be encrypted with
+# ansible-vault and never committed.
+mindbridge_postgres_password: "{{ vault_mindbridge_postgres_password }}"
+mindbridge_auth_secret_key: "{{ vault_mindbridge_auth_secret_key }}"
+mindbridge_internal_service_token: "{{ vault_mindbridge_internal_service_token }}"
+mindbridge_google_client_id: "{{ vault_mindbridge_google_client_id }}"
+mindbridge_google_client_secret: "{{ vault_mindbridge_google_client_secret }}"
+mindbridge_sendgrid_api_key: "{{ vault_mindbridge_sendgrid_api_key }}"
+mindbridge_openrouter_api_key: "{{ vault_mindbridge_openrouter_api_key }}"
+mindbridge_youtube_api_key: "{{ vault_mindbridge_youtube_api_key }}"
+mindbridge_sentry_dsn: "{{ vault_mindbridge_sentry_dsn | default('') }}"
+mindbridge_grafana_prometheus_url: "{{ vault_mindbridge_grafana_prometheus_url | default('') }}"
+mindbridge_grafana_prometheus_username: "{{ vault_mindbridge_grafana_prometheus_username | default('') }}"
+mindbridge_grafana_api_key: "{{ vault_mindbridge_grafana_api_key | default('') }}"

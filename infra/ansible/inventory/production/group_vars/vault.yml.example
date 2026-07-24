@@ -1,0 +1,21 @@
+# Copy this file to vault.yml, replace every placeholder, then encrypt it:
+#
+#   ansible-vault encrypt inventory/production/group_vars/vault.yml
+#
+# Do not commit the real vault.yml file.
+
+vault_mindbridge_postgres_password: "CHANGE_ME_STRONG_RANDOM_PASSWORD"
+vault_mindbridge_auth_secret_key: "CHANGE_ME_STRONG_RANDOM_SECRET_KEY_50_CHARS"
+vault_mindbridge_internal_service_token: "CHANGE_ME_STRONG_RANDOM_TOKEN"
+
+vault_mindbridge_google_client_id: "CHANGE_ME_GOOGLE_CLIENT_ID"
+vault_mindbridge_google_client_secret: "CHANGE_ME_GOOGLE_CLIENT_SECRET"
+vault_mindbridge_sendgrid_api_key: "CHANGE_ME_SENDGRID_API_KEY"
+vault_mindbridge_openrouter_api_key: "CHANGE_ME_OPENROUTER_API_KEY"
+vault_mindbridge_youtube_api_key: "CHANGE_ME_YOUTUBE_API_KEY"
+
+# Optional integrations. Leave empty strings if unused.
+vault_mindbridge_sentry_dsn: ""
+vault_mindbridge_grafana_prometheus_url: ""
+vault_mindbridge_grafana_prometheus_username: ""
+vault_mindbridge_grafana_api_key: ""

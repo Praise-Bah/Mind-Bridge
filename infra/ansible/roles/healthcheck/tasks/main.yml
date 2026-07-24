@@ -1,0 +1,26 @@
+---
+- name: Render health-check alert environment
+  ansible.builtin.template:
+    src: health_check_alert.env.j2
+    dest: "{{ mindbridge_deploy_path }}/infra/scripts/health_check_alert.env"
+    owner: "{{ mindbridge_repo_owner }}"
+    group: "{{ mindbridge_repo_owner }}"
+    mode: "0600"
+  no_log: true
+  when: mindbridge_enable_health_cron | bool
+
+- name: Ensure health-check script is executable
+  ansible.builtin.file:
+    path: "{{ mindbridge_deploy_path }}/infra/scripts/health_check_alert.sh"
+    owner: "{{ mindbridge_repo_owner }}"
+    group: "{{ mindbridge_repo_owner }}"
+    mode: "0755"
+  when: mindbridge_enable_health_cron | bool
+
+- name: Install MindBridge health-check cron
+  ansible.builtin.cron:
+    name: MindBridge service health alerts
+    minute: "*/5"
+    user: root
+    job: "{{ mindbridge_deploy_path }}/infra/scripts/health_check_alert.sh >> /var/log/mindbridge-health.log 2>&1"
+  when: mindbridge_enable_health_cron | bool

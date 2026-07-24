@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Certbot runs this after a successful renewal. The production Nginx instance is
+# a Docker container, so reload it in place to pick up renewed certificates.
+if docker ps --format '{% raw %}{{.Names}}{% endraw %}' | grep -qx 'docker-nginx-1'; then
+  docker exec docker-nginx-1 nginx -s reload
+fi

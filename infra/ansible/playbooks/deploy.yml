@@ -1,0 +1,7 @@
+---
+- name: Deploy MindBridge with Docker Compose
+  hosts: mindbridge
+  become: true
+  roles:
+    - mindbridge
+    - healthcheck

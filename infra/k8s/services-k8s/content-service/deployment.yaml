@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-service
+  namespace: mindbridge
+  labels:
+    app: content-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: content-service
+  template:
+    metadata:
+      labels:
+        app: content-service
+    spec:
+      containers:
+        - name: content-service
+          image: mindbridge/content-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8007
+          command:
+            - gunicorn
+            - core.wsgi:application
+            - --bind=0.0.0.0:8007
+            - --workers=4
+            - --threads=2
+            - --max-requests=1000
+            - --timeout=30
+            - --access-logfile=-
+          envFrom:
+            - configMapRef:
+                name: common-env
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: SERVICE_NAME
+              value: content-service
+            - name: POSTGRES_DB
+              value: content_db
+            # Overridden by the staging overlay to reach the Compose database.
+            - name: POSTGRES_HOST
+              value: postgres-content
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health/
+              port: 8007
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health/
+              port: 8007
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 5"]
+      terminationGracePeriodSeconds: 30

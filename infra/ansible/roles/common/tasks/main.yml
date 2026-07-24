@@ -1,0 +1,85 @@
+---
+- name: Require an Ubuntu host
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Ubuntu"
+    fail_msg: "This VPS bootstrap currently targets Ubuntu hosts, matching the documented MindBridge VPS setup."
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - cron
+      - curl
+      - git
+      - gnupg
+      - python3-apt
+      - python3-pip
+      - rsync
+      - sudo
+      - ufw
+    state: present
+    update_cache: true
+
+- name: Create deploy user
+  ansible.builtin.user:
+    name: "{{ mindbridge_deploy_user }}"
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    create_home: true
+  when: mindbridge_create_deploy_user | bool
+
+- name: Allow deploy user to use passwordless sudo
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ mindbridge_deploy_user }}"
+    content: "{{ mindbridge_deploy_user }} ALL=(ALL) NOPASSWD:ALL\n"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  when: mindbridge_create_deploy_user | bool
+
+- name: Ensure deployment directory exists
+  ansible.builtin.file:
+    path: "{{ mindbridge_deploy_path }}"
+    state: directory
+    owner: "{{ mindbridge_repo_owner }}"
+    group: "{{ mindbridge_repo_owner }}"
+    mode: "0755"
+
+- name: Install NodeSource setup script for Node.js 20
+  ansible.builtin.get_url:
+    url: https://deb.nodesource.com/setup_20.x
+    dest: /tmp/nodesource_setup_20.x
+    mode: "0755"
+  when: mindbridge_install_node | bool
+
+- name: Configure NodeSource repository
+  ansible.builtin.command: bash /tmp/nodesource_setup_20.x
+  args:
+    creates: /etc/apt/sources.list.d/nodesource.list
+  when: mindbridge_install_node | bool
+
+- name: Install Node.js 20 for local frontend builds
+  ansible.builtin.apt:
+    name: nodejs
+    state: present
+    update_cache: true
+  when: mindbridge_install_node | bool
+
+- name: Allow SSH, HTTP, and HTTPS through UFW
+  ansible.builtin.command: "ufw allow {{ item }}"
+  register: mindbridge_ufw_allow
+  changed_when: "'Rules updated' in mindbridge_ufw_allow.stdout"
+  loop:
+    - "{{ mindbridge_ssh_port }}/tcp"
+    - 80/tcp
+    - 443/tcp
+  when: mindbridge_enable_firewall | bool
+
+- name: Enable UFW
+  ansible.builtin.command: ufw --force enable
+  register: mindbridge_ufw_enable
+  changed_when: "'Firewall is active and enabled on system startup' in mindbridge_ufw_enable.stdout"
+  when: mindbridge_enable_firewall | bool

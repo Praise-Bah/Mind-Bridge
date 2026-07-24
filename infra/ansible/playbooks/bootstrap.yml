@@ -1,0 +1,8 @@
+---
+- name: Bootstrap MindBridge VPS
+  hosts: mindbridge
+  become: true
+  roles:
+    - common
+    - docker
+    - ssl

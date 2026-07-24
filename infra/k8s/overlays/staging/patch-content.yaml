@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-service
+spec:
+  replicas: 1
+  template:
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
+      containers:
+        - name: content-service
+          # postgres-content is published on host port 5433 by the bridge
+          # override to avoid clashing with postgres-auth on 5432.
+          env:
+            - name: POSTGRES_HOST
+              value: "172.17.0.1"
+            - name: POSTGRES_PORT
+              value: "5433"
+            - name: REDIS_URL
+              value: "redis://172.17.0.1:6379/0"
+            - name: REDIS_CACHE_URL
+              value: "redis://172.17.0.1:6379/2"
+            - name: REDIS_EVENT_BUS_URL
+              value: "redis://172.17.0.1:6379/3"
+            - name: REDIS_CHANNEL_LAYER_URL
+              value: "redis://172.17.0.1:6379/1"
+            - name: CELERY_BROKER_URL
+              value: "redis://172.17.0.1:6379/0"

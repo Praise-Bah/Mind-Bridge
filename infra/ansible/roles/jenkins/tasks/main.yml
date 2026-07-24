@@ -1,0 +1,44 @@
+---
+# Provisions the Jenkins CI/CD container from infra/jenkins. Assumes Docker is
+# already installed (docker role) and the repo is checked out at
+# mindbridge_deploy_path (mindbridge role).
+
+- name: Ensure the repository is present for Jenkins
+  ansible.builtin.stat:
+    path: "{{ mindbridge_deploy_path }}/infra/jenkins/docker-compose.jenkins.yml"
+  register: mindbridge_jenkins_compose
+
+- name: Fail if the repository has not been deployed yet
+  ansible.builtin.assert:
+    that:
+      - mindbridge_jenkins_compose.stat.exists
+    fail_msg: "Run playbooks/deploy.yml first so {{ mindbridge_deploy_path }} exists before provisioning Jenkins."
+
+- name: Build and start Jenkins
+  ansible.builtin.command: >
+    docker compose -f docker-compose.jenkins.yml up --build -d
+  args:
+    chdir: "{{ mindbridge_deploy_path }}/infra/jenkins"
+
+- name: Wait for Jenkins to respond on loopback
+  ansible.builtin.uri:
+    url: http://127.0.0.1:8080/login
+    status_code: 200
+    validate_certs: false
+  register: mindbridge_jenkins_up
+  retries: 30
+  delay: 10
+  until: mindbridge_jenkins_up.status == 200
+
+- name: Show the Jenkins initial admin password
+  ansible.builtin.command: docker exec mindbridge-jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+  register: mindbridge_jenkins_admin_pw
+  changed_when: false
+  failed_when: false
+
+- name: Report how to reach Jenkins
+  ansible.builtin.debug:
+    msg:
+      - "Jenkins is bound to 127.0.0.1:8080 on the VPS."
+      - "Tunnel with: ssh -L 8080:127.0.0.1:8080 {{ mindbridge_deploy_user }}@<vps>"
+      - "Initial admin password: {{ mindbridge_jenkins_admin_pw.stdout | default('unavailable - check docker logs') }}"

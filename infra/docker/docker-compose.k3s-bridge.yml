@@ -1,0 +1,32 @@
+# k3s staging bridge override.
+#
+# The production stack keeps Postgres/Redis on the internal `prod-net` bridge
+# with no host ports. k3s pods run under containerd (separate from the Compose
+# network) and cannot resolve `postgres-auth`, `postgres-content`, or `redis`
+# by name. This override publishes ONLY the databases the staging services need
+# (auth + content) plus Redis, bound to the Docker bridge gateway instead of the
+# public interface, so k3s pods reach them at that host IP.
+#
+# Usage (run alongside the production file so the base services keep their config):
+#   cd infra/docker
+#   docker compose \
+#     -f docker-compose.prod.yml \
+#     -f docker-compose.k3s-bridge.yml \
+#     --env-file .env.prod up -d postgres-auth postgres-content redis
+#
+# K3S_BRIDGE_HOST defaults to the standard docker0 gateway (172.17.0.1). Confirm
+# it with `ip -4 addr show docker0` and override in .env.prod if different.
+# The k3s staging overlay must set POSTGRES_HOST / REDIS_* to this same value.
+
+services:
+  postgres-auth:
+    ports:
+      - "${K3S_BRIDGE_HOST:-172.17.0.1}:5432:5432"
+
+  postgres-content:
+    ports:
+      - "${K3S_BRIDGE_HOST:-172.17.0.1}:5433:5432"
+
+  redis:
+    ports:
+      - "${K3S_BRIDGE_HOST:-172.17.0.1}:6379:6379"

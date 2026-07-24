@@ -1,0 +1,40 @@
+# Jenkins CI/CD for MindBridge, running as a standalone Docker container on the
+# VPS (outside k3s). Resource-limited so it coexists with the Compose production
+# stack and the k3s staging lane.
+#
+# Usage:
+#   cd infra/jenkins
+#   docker compose -f docker-compose.jenkins.yml up --build -d
+#
+# The UI is bound to loopback only; reach it via an SSH tunnel:
+#   ssh -L 8080:127.0.0.1:8080 user@your-vps
+# then open http://localhost:8080
+
+services:
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mindbridge/jenkins:lts
+    container_name: mindbridge-jenkins
+    # Root is needed to use the mounted Docker socket for image builds.
+    user: root
+    restart: always
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:50000:50000"
+    environment:
+      # Cap the JVM heap so Jenkins stays within its memory budget.
+      JAVA_OPTS: "-Xmx768m -Djenkins.install.runSetupWizard=true"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      # Build images using the host Docker daemon.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Deploy to k3s. Point KUBECONFIG at this mounted file in the job.
+      - /etc/rancher/k3s/k3s.yaml:/var/jenkins_home/.kube/config:ro
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    cpus: 1.0
+
+volumes:
+  jenkins_home:

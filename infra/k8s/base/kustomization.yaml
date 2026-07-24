@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Shared base for the three staging services. Namespace, images, replicas, and
+# bridge connectivity are applied by overlays (see ../overlays/staging).
+# Secrets (app-secrets, postgres-secrets, ghcr-pull-secret) are created out of
+# band with kubectl and are intentionally NOT listed here.
+
+resources:
+  - ../configmaps/common-env.yaml
+  - ../services-k8s/auth-service/deployment.yaml
+  - ../services-k8s/auth-service/service.yaml
+  - ../services-k8s/content-service/deployment.yaml
+  - ../services-k8s/content-service/service.yaml
+  - ../services-k8s/admin-service/deployment.yaml
+  - ../services-k8s/admin-service/service.yaml

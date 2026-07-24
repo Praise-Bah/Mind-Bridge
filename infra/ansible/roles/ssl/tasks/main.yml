@@ -1,0 +1,39 @@
+---
+- name: Skip SSL provisioning when disabled
+  ansible.builtin.debug:
+    msg: "mindbridge_enable_ssl is false; make sure Nginx is adapted before using docker-compose.prod.yml without certificates."
+  when: not (mindbridge_enable_ssl | bool)
+
+- name: Provision Let's Encrypt certificate
+  when: mindbridge_enable_ssl | bool
+  block:
+    - name: Validate SSL inputs
+      ansible.builtin.assert:
+        that:
+          - mindbridge_api_domain is defined
+          - mindbridge_api_domain | length > 0
+          - mindbridge_ssl_email is defined
+          - mindbridge_ssl_email != "ops@example.com"
+        fail_msg: "Set mindbridge_api_domain and a real mindbridge_ssl_email before requesting Let's Encrypt certificates."
+
+    - name: Install Certbot
+      ansible.builtin.apt:
+        name: certbot
+        state: present
+        update_cache: true
+
+    - name: Request certificate with standalone Certbot
+      ansible.builtin.command: >
+        certbot certonly --standalone --non-interactive --agree-tos
+        --email {{ mindbridge_ssl_email }}
+        -d {{ mindbridge_api_domain }}
+      args:
+        creates: "/etc/letsencrypt/live/{{ mindbridge_api_domain }}/fullchain.pem"
+
+    - name: Install renewal hook to reload containerized Nginx
+      ansible.builtin.template:
+        src: reload-mindbridge-nginx.sh.j2
+        dest: /etc/letsencrypt/renewal-hooks/deploy/reload-mindbridge-nginx.sh
+        owner: root
+        group: root
+        mode: "0755"

@@ -1,0 +1,6 @@
+---
+- name: Install k3s staging cluster on the MindBridge VPS
+  hosts: mindbridge
+  become: true
+  roles:
+    - k3s
